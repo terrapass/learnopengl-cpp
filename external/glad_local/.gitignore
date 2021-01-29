@@ -1,0 +1,48 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# NetBeans files and directories
+nbproject/
+build/
+dist/
+.dep.inc
+
+# Makefile (NetBeans-generated)
+Makefile
+
+# Editor-generated temporary files
+*.*~
+
+# Visual Studio Code workspace directory
+.vscode/
+
+# Visual Studio workspace directory and private files
+.vs/
+CMakeSettings.json
+
