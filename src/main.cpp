@@ -25,6 +25,16 @@ static constexpr int MAIN_ERR_UNKNOWN     = -1;
 static constexpr int MAIN_ERR_INIT_FAILED = -2;
 
 //
+// Forward declarations
+//
+
+static void SetGLViewportSize(const int width, const int height);
+
+static void OnFramebufferSizeChanged(GLFWwindow * const /*window*/, const int width, const int height);
+
+static void ProcessInput(GLFWwindow * const window);
+
+//
 // Main
 //
 
@@ -78,6 +88,33 @@ int main()
                 && "GLAD GL version must match the expected one"
         );
         BOOST_LOG_TRIVIAL(info)<< "Loaded GLAD for OpenGL version " << GLVersion.major << '.' << GLVersion.minor;
+
+        BOOST_LOG_TRIVIAL(info)<< "Using OpenGL version " << glGetString(GL_VERSION);
+        BOOST_LOG_TRIVIAL(info)<< "Using OpenGL renderer " << glGetString(GL_RENDERER);
+
+        {
+            int framebufferWidth  = -1;
+            int framebufferHeight = -1;
+
+            glfwGetFramebufferSize(window.get(), &framebufferWidth, &framebufferHeight);
+
+            OnFramebufferSizeChanged(window.get(), framebufferWidth, framebufferHeight);
+        }
+
+        glfwSetFramebufferSizeCallback(window.get(), &OnFramebufferSizeChanged);
+
+        while (!glfwWindowShouldClose(window.get()))
+        {
+            ProcessInput(window.get());
+
+            // TODO: Actual render commands
+            glClearColor(0.5f, 0.75f, 0.75f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+            // END TODO
+
+            glfwSwapBuffers(window.get());
+            glfwPollEvents();
+        }
     }
     catch (const ScopedGLFW::GLFWInitFailed & e)
     {
@@ -101,3 +138,29 @@ int main()
     return MAIN_ERR_NONE;
 }
 
+//
+// Service
+//
+
+static void SetGLViewportSize(const int width, const int height)
+{
+    assert(width > 0);
+    assert(height > 0);
+
+    glViewport(0, 0, width, height);
+
+    BOOST_LOG_TRIVIAL(debug)<< "Set GL viewport size to " << width << 'x' << height;
+}
+
+static void OnFramebufferSizeChanged(GLFWwindow * const /*window*/, const int width, const int height)
+{
+    BOOST_LOG_TRIVIAL(info)<< "Framebuffer size changed to " << width << 'x' << height;
+
+    SetGLViewportSize(width, height);
+}
+
+static void ProcessInput(GLFWwindow * const window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+}
