@@ -19,7 +19,7 @@ ScopedGLFW::ScopedGLFW()
     const char * error = nullptr;
     glfwGetError(&error);
 
-    throw GLFWInitFailed(error);
+    throw GLFWInitFailedException(error);
 }
 
 ScopedGLFW::~ScopedGLFW()
