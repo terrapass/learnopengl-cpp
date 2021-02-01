@@ -45,6 +45,14 @@ static void OnFramebufferSizeChanged(GLFWwindow * const /*window*/, const int wi
 
 static GLuint CompileShaderFromFile(const GLenum shaderType, const std::string & shaderSourceFilename);
 
+static void OnKeyEvent(
+    GLFWwindow * const window,
+    const int          key,
+    const int          scancode,
+    const int          action,
+    const int          mods
+);
+
 static void ProcessInput(GLFWwindow * const window);
 
 //
@@ -205,6 +213,8 @@ int main()
         // END SECTION
         // END TODO0
 
+        glfwSetKeyCallback(window.get(), &OnKeyEvent);
+
         while (!glfwWindowShouldClose(window.get()))
         {
             ProcessInput(window.get());
@@ -304,8 +314,36 @@ static GLuint CompileShaderFromFile(const GLenum shaderType, const std::string &
     return shader;
 }
 
-static void ProcessInput(GLFWwindow * const window)
+static void OnKeyEvent(
+    GLFWwindow * const window,
+    const int          key,
+    const int          /*scancode*/,
+    const int          action,
+    const int          /*mods*/
+)
 {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    if (action != GLFW_PRESS)
+        return;
+
+    switch (key)
+    {
+    case GLFW_KEY_ESCAPE:
         glfwSetWindowShouldClose(window, GLFW_TRUE);
+        break;
+
+    case GLFW_KEY_Z:
+        {
+            GLint polygonMode = -1;
+            glGetIntegerv(GL_POLYGON_MODE, &polygonMode);
+            assert(polygonMode != 1);
+
+            glPolygonMode(GL_FRONT_AND_BACK, polygonMode == GL_LINE ? GL_FILL : GL_LINE);
+        }
+        break;
+    }
+}
+
+static void ProcessInput(GLFWwindow * const /*window*/)
+{
+    // TODO: Process continuous key presses, mouse position etc.
 }
