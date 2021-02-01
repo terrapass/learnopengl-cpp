@@ -32,7 +32,7 @@ static const std::string VERTEX_SHADER_SOURCE_FILENAME   = "basic.vert";
 static const std::string FRAGMENT_SHADER_SOURCE_FILENAME = "basic.frag";
 
 static const GLuint INVALID_OPENGL_VAO    = 0;
-static const GLuint INVALID_OPENGL_VBO    = static_cast<GLuint>(-1);
+static const GLuint INVALID_OPENGL_BUFFER    = static_cast<GLuint>(-1);
 static const GLuint INVALID_OPENGL_SHADER = 0;
 
 //
@@ -126,8 +126,14 @@ int main()
         // TODO0: Extract (scene setup logic, shader program loading) and refactor
         const std::vector<float> vertices{
             -0.5f, -0.5f, 0.0f,
-            0.0f, 0.5f, 0.0f,
-            0.5f, -0.5f, 0.0f
+            0.5f, -0.5f, 0.0f,
+            -0.5f, 0.5f, 0.0f,
+            0.5f, 0.5f, 0.0f
+        };
+
+        const std::vector<GLuint> indices{
+            0, 1, 2,
+            1, 2, 3
         };
 
         // SECTION: VAO setup
@@ -137,18 +143,25 @@ int main()
 
         glBindVertexArray(vertexArrayObject);
 
-        GLuint vertexBufferObject = INVALID_OPENGL_VBO;
+        GLuint vertexBufferObject = INVALID_OPENGL_BUFFER;
         glGenBuffers(1, &vertexBufferObject);
-        assert(vertexBufferObject != INVALID_OPENGL_VBO);
+        assert(vertexBufferObject != INVALID_OPENGL_BUFFER);
 
         glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
         glBufferData(GL_ARRAY_BUFFER, SizeOfCollectionData(vertices), vertices.data(), GL_STATIC_DRAW);
+
+        GLuint elementBufferObject = INVALID_OPENGL_BUFFER;
+        glGenBuffers(1, &elementBufferObject);
+        assert(elementBufferObject != INVALID_OPENGL_BUFFER);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferObject);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, SizeOfCollectionData(indices), indices.data(), GL_STATIC_DRAW);
 
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), static_cast<void*>(0));
         glEnableVertexAttribArray(0);
 
         glBindVertexArray(INVALID_OPENGL_VAO);
-        glBindBuffer(GL_ARRAY_BUFFER, INVALID_OPENGL_VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, INVALID_OPENGL_BUFFER);
         // END SECTION
 
         // SECTION: Shader program setup
@@ -203,7 +216,7 @@ int main()
             glUseProgram(shaderProgram);
             glBindVertexArray(vertexArrayObject);
 
-            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
             // END TODO
 
             glfwSwapBuffers(window.get());
