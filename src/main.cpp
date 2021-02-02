@@ -32,12 +32,16 @@ static const std::string VERTEX_SHADER_SOURCE_FILENAME   = "basic.vert";
 static const std::string FRAGMENT_SHADER_SOURCE_FILENAME = "basic.frag";
 
 static const GLuint INVALID_OPENGL_VAO    = 0;
-static const GLuint INVALID_OPENGL_BUFFER    = static_cast<GLuint>(-1);
+static const GLuint INVALID_OPENGL_BUFFER = 0;
 static const GLuint INVALID_OPENGL_SHADER = 0;
 
 //
 // Forward declarations
 //
+
+#ifdef GLAD_DEBUG
+static void OnGladFunctionCalled(const char * const funcName, void * const funcPtr, const int varArgsCount, ...);
+#endif
 
 static void SetGLViewportSize(const int width, const int height);
 
@@ -66,6 +70,8 @@ int main()
 #ifdef NDEBUG
     BOOST_LOG_TRIVIAL(warning)<< "Using slower GLAD with debug callbacks in Release build";
 #endif // NDEBUG
+
+    glad_set_post_callback(OnGladFunctionCalled);
 #endif // GLAD_DEBUG
 
     try
@@ -260,6 +266,20 @@ int main()
 //
 // Service
 //
+
+#ifdef GLAD_DEBUG
+static void OnGladFunctionCalled(const char * const funcName, void * const /*funcPtr*/, const int /*varArgsCount*/, ...)
+{
+    const GLenum errorCode = glad_glGetError();
+
+    if (errorCode == GL_NO_ERROR)
+        return;
+
+    BOOST_LOG_TRIVIAL(error)<< "OpenGL error " << errorCode << " in " << funcName;
+
+    assert(false && "OpenGL calls must succeed");
+}
+#endif
 
 static void SetGLViewportSize(const int width, const int height)
 {
