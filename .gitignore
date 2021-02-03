@@ -29,7 +29,7 @@
 
 # NetBeans files and directories
 nbproject/
-build/
+build*/
 dist/
 .dep.inc
 
