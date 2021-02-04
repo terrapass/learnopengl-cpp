@@ -6,6 +6,8 @@
 #include <GLFW/glfw3.h>
 #include <boost/log/trivial.hpp>
 
+#include "gl/constants.h"
+#include "gl/wrappers.h"
 #include "utils/ScopedGLFW.h"
 #include "utils/collection_utils.h"
 #include "utils/file_utils.h"
@@ -31,10 +33,6 @@ static const std::string SHADERS_DIR = "assets/shaders/";
 static const std::string VERTEX_SHADER_SOURCE_FILENAME   = "basic.vert";
 static const std::string FRAGMENT_SHADER_SOURCE_FILENAME = "basic.frag";
 
-static const GLuint INVALID_OPENGL_VAO    = 0;
-static const GLuint INVALID_OPENGL_BUFFER = 0;
-static const GLuint INVALID_OPENGL_SHADER = 0;
-
 //
 // Forward declarations
 //
@@ -47,7 +45,7 @@ static void SetGLViewportSize(const int width, const int height);
 
 static void OnFramebufferSizeChanged(GLFWwindow * const /*window*/, const int width, const int height);
 
-static GLuint CompileShaderFromFile(const GLenum shaderType, const std::string & shaderSourceFilename);
+static UniqueShader CompileShaderFromFile(const GLenum shaderType, const std::string & shaderSourceFilename);
 
 static void OnKeyEvent(
     GLFWwindow * const window,
@@ -142,31 +140,29 @@ int main()
             -0.5f, -0.5f, 0.0f,
             0.5f, -0.5f, 0.0f,
             -0.5f, 0.5f, 0.0f,
-            0.5f, 0.5f, 0.0f
+            0.5f, 0.5f, 0.0f,
+            -0.8f, -0.8f, 0.0f,
+            -0.6f, -0.6f, 0.0f,
+            -0.7f, 0.2f, 0.0f
         };
 
         const std::vector<GLuint> indices{
             0, 1, 2,
-            1, 2, 3
+            1, 2, 3,
+            4, 5, 6
         };
 
         // SECTION: VAO setup
-        GLuint vertexArrayObject = INVALID_OPENGL_VAO;
-        glGenVertexArrays(1, &vertexArrayObject);
-        assert(vertexArrayObject != INVALID_OPENGL_VAO);
+        const UniqueVAO vertexArrayObject = UniqueVAO::Create();
 
         glBindVertexArray(vertexArrayObject);
 
-        GLuint vertexBufferObject = INVALID_OPENGL_BUFFER;
-        glGenBuffers(1, &vertexBufferObject);
-        assert(vertexBufferObject != INVALID_OPENGL_BUFFER);
+        const UniqueBuffer vertexBufferObject = UniqueBuffer::Create();
 
         glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
         glBufferData(GL_ARRAY_BUFFER, SizeOfCollectionData(vertices), vertices.data(), GL_STATIC_DRAW);
 
-        GLuint elementBufferObject = INVALID_OPENGL_BUFFER;
-        glGenBuffers(1, &elementBufferObject);
-        assert(elementBufferObject != INVALID_OPENGL_BUFFER);
+        const UniqueBuffer elementBufferObject = UniqueBuffer::Create();
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferObject);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, SizeOfCollectionData(indices), indices.data(), GL_STATIC_DRAW);
@@ -179,11 +175,10 @@ int main()
         // END SECTION
 
         // SECTION: Shader program setup
-        const GLuint vertexShader   = CompileShaderFromFile(GL_VERTEX_SHADER, VERTEX_SHADER_SOURCE_FILENAME);
-        const GLuint fragmentShader = CompileShaderFromFile(GL_FRAGMENT_SHADER, FRAGMENT_SHADER_SOURCE_FILENAME); 
+        UniqueShader vertexShader   = CompileShaderFromFile(GL_VERTEX_SHADER, VERTEX_SHADER_SOURCE_FILENAME);
+        UniqueShader fragmentShader = CompileShaderFromFile(GL_FRAGMENT_SHADER, FRAGMENT_SHADER_SOURCE_FILENAME); 
 
-        const GLuint shaderProgram = glCreateProgram();
-        assert(shaderProgram != INVALID_OPENGL_SHADER);
+        const UniqueShaderProgram shaderProgram = UniqueShaderProgram::Create();
 
         glAttachShader(shaderProgram, vertexShader);
         glAttachShader(shaderProgram, fragmentShader);
@@ -212,10 +207,9 @@ int main()
         BOOST_LOG_TRIVIAL(info)<< "Successfully linked shader program from "
             << VERTEX_SHADER_SOURCE_FILENAME << ", " << FRAGMENT_SHADER_SOURCE_FILENAME;
 
-        // TODO1: Implement proper cleanup (including in case of exceptions) using RAII
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
-        // END TODO1
+        vertexShader.Reset();
+        fragmentShader.Reset();
+
         // END SECTION
         // END TODO0
 
@@ -232,7 +226,7 @@ int main()
             glUseProgram(shaderProgram);
             glBindVertexArray(vertexArrayObject);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
             // END TODO
 
             glfwSwapBuffers(window.get());
@@ -257,8 +251,6 @@ int main()
 
         return MAIN_ERR_UNKNOWN;
     }
-
-    // TODO: Cleanup OpenGL objects (preferably using RAII)
 
     return MAIN_ERR_NONE;
 }
@@ -298,15 +290,14 @@ static void OnFramebufferSizeChanged(GLFWwindow * const /*window*/, const int wi
     SetGLViewportSize(width, height);
 }
 
-static GLuint CompileShaderFromFile(const GLenum shaderType, const std::string & shaderSourceFilename)
+static UniqueShader CompileShaderFromFile(const GLenum shaderType, const std::string & shaderSourceFilename)
 {
     const std::string shaderSource = ReadFileContent(SHADERS_DIR + shaderSourceFilename);
     BOOST_LOG_TRIVIAL(debug)<< "Loaded shader source from " << shaderSourceFilename << ":\n" << shaderSource;
 
     const char * const shaderSourceData = shaderSource.data();
 
-    const GLuint shader = glCreateShader(shaderType);
-    assert(shader != INVALID_OPENGL_SHADER);
+    UniqueShader shader = UniqueShader::Create(shaderType);
 
     glShaderSource(shader, 1, &shaderSourceData, nullptr);
     glCompileShader(shader);
