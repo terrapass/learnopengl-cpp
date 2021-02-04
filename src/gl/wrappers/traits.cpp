@@ -1,6 +1,7 @@
 #include "traits.h"
 
 #include <cassert>
+#include <algorithm>
 
 #include "gl/constants.h"
 
@@ -22,11 +23,15 @@ GLuint VaoTraits::Create()
     return vertexArrayObject;
 }
 
-std::vector<GLuint> VaoTraits::CreateMany(const size_t /*count*/)
+std::vector<GLuint> VaoTraits::CreateMany(const size_t count)
 {
-    assert(false && "not implemented yet");
+    std::vector<GLuint> result(count, INVALID_OPENGL_VAO);
+    assert(result.size() == count);
 
-    return {};
+    glGenVertexArrays(static_cast<GLsizei>(count), result.data());
+
+    assert(std::find(result.cbegin(), result.cend(), INVALID_OPENGL_VAO) == result.cend());
+    return result;
 }
 
 void VaoTraits::Destroy(const GLuint vertexArrayObject)
@@ -49,11 +54,15 @@ GLuint BufferTraits::Create()
     return vertexBufferObject;
 }
 
-std::vector<GLuint> BufferTraits::CreateMany(const size_t /*count*/)
+std::vector<GLuint> BufferTraits::CreateMany(const size_t count)
 {
-    assert(false && "not implemented yet");
+    std::vector<GLuint> result(count, INVALID_OPENGL_BUFFER);
+    assert(result.size() == count);
 
-    return {};
+    glGenBuffers(static_cast<GLsizei>(count), result.data());
+
+    assert(std::find(result.cbegin(), result.cend(), INVALID_OPENGL_BUFFER) == result.cend());
+    return result;
 }
 
 void BufferTraits::Destroy(const GLuint vertexBufferObject)
