@@ -46,7 +46,7 @@ public: // Construction / Destruction
 
 private: // Construction
 
-    explicit UniqueEntity(const Traits::ValueType value):
+    explicit UniqueEntity(const typename Traits::ValueType value):
         m_Value(value)
     {
         assert(m_Value.has_value());
@@ -123,7 +123,7 @@ public: // Factory methods
 
 public: // Implicit conversion
 
-    operator Traits::ValueType() const
+    operator typename Traits::ValueType() const
     {
         assert(m_Value.has_value() && "UniqueEntity must be initialized at this point");
 
