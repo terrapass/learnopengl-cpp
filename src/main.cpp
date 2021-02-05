@@ -1,6 +1,7 @@
 #include <memory>
 #include <cassert>
 #include <vector>
+#include <array>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -56,6 +57,8 @@ static void OnKeyEvent(
 );
 
 static void ProcessInput(GLFWwindow * const window);
+
+static void TogglePolygonMode();
 
 //
 // Main
@@ -134,6 +137,9 @@ int main()
         }
 
         glfwSetFramebufferSizeCallback(window.get(), &OnFramebufferSizeChanged);
+
+        // Set default polygon mode
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
         // TODO0: Extract (scene setup logic, shader program loading) and refactor
         const std::vector<float> vertices{
@@ -362,13 +368,7 @@ static void OnKeyEvent(
         break;
 
     case GLFW_KEY_Z:
-        {
-            GLint polygonMode = -1;
-            glGetIntegerv(GL_POLYGON_MODE, &polygonMode);
-            assert(polygonMode != 1);
-
-            glPolygonMode(GL_FRONT_AND_BACK, polygonMode == GL_LINE ? GL_FILL : GL_LINE);
-        }
+        TogglePolygonMode();
         break;
     }
 }
@@ -376,4 +376,19 @@ static void OnKeyEvent(
 static void ProcessInput(GLFWwindow * const /*window*/)
 {
     // TODO: Process continuous key presses, mouse position etc.
+}
+
+static void TogglePolygonMode()
+{
+  std::array<GLint, 2> polygonMode{{-1, -1}};
+
+  // This seems to yield either 1 or 2 values (depending on the platform maybe?).
+  // If there are 2 values, the first is for front face mode, the second - for back face.
+  glGetIntegerv(GL_POLYGON_MODE, polygonMode.data());
+
+  const GLint frontFaceMode = polygonMode[0];
+  const GLint backFaceMode  = polygonMode[1];
+  assert(frontFaceMode == backFaceMode || backFaceMode == -1);
+
+  glPolygonMode(GL_FRONT_AND_BACK, frontFaceMode == GL_LINE ? GL_FILL : GL_LINE);
 }
