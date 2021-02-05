@@ -162,10 +162,3 @@ using UniqueVAO    = UniqueEntity<detail::VaoTraits>;
 using UniqueBuffer = UniqueEntity<detail::BufferTraits>;
 using UniqueShader = UniqueEntity<detail::ShaderTraits>;
 using UniqueShaderProgram = UniqueEntity<detail::ShaderProgramTraits>;
-
-// TEMP
-static_assert(detail::HasCreateManyStaticMethod<detail::VaoTraits>::value);
-static_assert(detail::HasCreateManyStaticMethod<detail::BufferTraits>::value);
-static_assert(!detail::HasCreateManyStaticMethod<detail::ShaderTraits>::value);
-static_assert(!detail::HasCreateManyStaticMethod<detail::ShaderProgramTraits>::value);
-// END TEMP
