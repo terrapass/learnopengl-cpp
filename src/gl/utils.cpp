@@ -2,7 +2,8 @@
 
 #include <array>
 
-#include "utils/file_utils.h"
+#include <glad/glad.h>
+
 #include "logging.h"
 #include "config.h"
 
@@ -48,41 +49,6 @@ void TogglePolygonMode()
   assert(frontFaceMode == backFaceMode || backFaceMode == -1);
 
   glPolygonMode(GL_FRONT_AND_BACK, frontFaceMode == GL_LINE ? GL_FILL : GL_LINE);
-}
-
-UniqueShader CompileShaderFromFile(const GLenum shaderType, const std::string & shaderSourceFilename)
-{
-    const std::string shaderSource = ReadFileContent(SHADERS_DIR + shaderSourceFilename);
-    BOOST_LOG_TRIVIAL(debug)<< "Loaded shader source from " << shaderSourceFilename << ":\n" << shaderSource;
-
-    const char * const shaderSourceData = shaderSource.data();
-
-    UniqueShader shader = UniqueShader::Create(shaderType);
-
-    glShaderSource(shader, 1, &shaderSourceData, nullptr);
-    glCompileShader(shader);
-
-    {
-        GLint compilationStatusValue = GL_FALSE;
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &compilationStatusValue);
-
-        if (!compilationStatusValue)
-        {
-            static const size_t MAX_SHADER_COMPILATION_LOG_SIZE = 512;
-
-            std::string compilationLog(MAX_SHADER_COMPILATION_LOG_SIZE, '\0');
-            glGetShaderInfoLog(shader, MAX_SHADER_COMPILATION_LOG_SIZE, nullptr, compilationLog.data());
-
-            BOOST_LOG_TRIVIAL(fatal)<< "Failed to compile shader from " << shaderSourceFilename << ": " << compilationLog;
-
-            assert(false && "shader compilation must succeed");
-
-            // TODO: Replace with a custom exception
-            throw std::runtime_error("Failed to compile shader from " + shaderSourceFilename);
-        }
-    }
-
-    return shader;
 }
 
 int GetMaxVertexAttribs()

@@ -17,5 +17,5 @@ class FileException final: public std::runtime_error
 {
 public: // Construction
 
-    FileException(const std::string & path);
+    explicit FileException(const std::string & path);
 };

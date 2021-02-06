@@ -9,6 +9,7 @@
 #include "gl/constants.h"
 #include "gl/wrappers.h"
 #include "gl/utils.h"
+#include "gl/shaders.h"
 #include "utils/boost_utils.h"
 #include "utils/glfw_utils.h"
 #include "utils/collection_utils.h"
@@ -178,31 +179,7 @@ int main()
         UniqueShader vertexShader   = CompileShaderFromFile(GL_VERTEX_SHADER, VERTEX_SHADER_SOURCE_FILENAME);
         UniqueShader fragmentShader = CompileShaderFromFile(GL_FRAGMENT_SHADER, FRAGMENT_SHADER_SOURCE_FILENAME);
 
-        const UniqueShaderProgram shaderProgram = UniqueShaderProgram::Create();
-
-        glAttachShader(shaderProgram, vertexShader);
-        glAttachShader(shaderProgram, fragmentShader);
-        glLinkProgram(shaderProgram);
-
-        {
-            GLint linkStatusValue = GL_FALSE;
-            glGetProgramiv(shaderProgram, GL_LINK_STATUS, &linkStatusValue);
-
-            if (!linkStatusValue)
-            {
-                static const size_t MAX_SHADER_LINKING_LOG_SIZE = 512;
-
-                std::string linkingLog(MAX_SHADER_LINKING_LOG_SIZE, '\0');
-                glGetShaderInfoLog(shaderProgram, MAX_SHADER_LINKING_LOG_SIZE, nullptr, linkingLog.data());
-
-                BOOST_LOG_TRIVIAL(fatal)<< "Failed to link shader program: " << linkingLog;
-
-                assert(false && "shader program linking must succeed");
-
-                // TODO: Replace with a custom exception
-                throw std::runtime_error("Failed to link shader program");
-            }
-        }
+        const UniqueShaderProgram shaderProgram = MakeShaderProgram(vertexShader, fragmentShader);
 
         BOOST_LOG_TRIVIAL(info)<< "Successfully linked shader program from "
             << VERTEX_SHADER_SOURCE_FILENAME << ", " << FRAGMENT_SHADER_SOURCE_FILENAME;
