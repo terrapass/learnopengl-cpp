@@ -178,7 +178,7 @@ int main()
         //     "basic.vert",
         //     "basic.frag"
         // );
-        const UniqueShaderProgram shaderProgram = MakeShaderProgramFromMatchingFiles("basic");
+        const UniqueShaderProgram shaderProgram = MakeShaderProgramFromMatchingFiles("basic_link");
 
         // END TODO0
 
