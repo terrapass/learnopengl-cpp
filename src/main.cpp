@@ -5,31 +5,23 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <boost/log/trivial.hpp>
 
 #include "gl/constants.h"
 #include "gl/wrappers.h"
-#include "utils/ScopedGLFW.h"
+#include "gl/utils.h"
+#include "utils/boost_utils.h"
+#include "utils/glfw_utils.h"
 #include "utils/collection_utils.h"
-#include "utils/file_utils.h"
+#include "config.h"
+#include "logging.h"
 
 //
 // Constants
 //
 
-static constexpr int OPENGL_MAJOR_VERSION = 3;
-static constexpr int OPENGL_MINOR_VERSION = 3;
-
-static const char * const WINDOW_TITLE = "learnopengl-cpp";
-
-static constexpr int WINDOW_WIDTH  = 800;
-static constexpr int WINDOW_HEIGHT = 600;
-
 static constexpr int MAIN_ERR_NONE        = 0;
 static constexpr int MAIN_ERR_UNKNOWN     = -1;
 static constexpr int MAIN_ERR_INIT_FAILED = -2;
-
-static const std::string SHADERS_DIR = "assets/shaders/";
 
 static const std::string VERTEX_SHADER_SOURCE_FILENAME   = "basic.vert";
 static const std::vector<std::string> FRAGMENT_SHADER_SOURCE_FILENAMES{"basic0.frag", "basic1.frag"};
@@ -42,11 +34,7 @@ static const std::vector<std::string> FRAGMENT_SHADER_SOURCE_FILENAMES{"basic0.f
 static void OnGladFunctionCalled(const char * const funcName, void * const funcPtr, const int varArgsCount, ...);
 #endif
 
-static void SetGLViewportSize(const int width, const int height);
-
 static void OnFramebufferSizeChanged(GLFWwindow * const /*window*/, const int width, const int height);
-
-static UniqueShader CompileShaderFromFile(const GLenum shaderType, const std::string & shaderSourceFilename);
 
 static void OnKeyEvent(
     GLFWwindow * const window,
@@ -58,14 +46,15 @@ static void OnKeyEvent(
 
 static void ProcessInput(GLFWwindow * const window);
 
-static void TogglePolygonMode();
-
 //
 // Main
 //
 
 int main()
 {
+    InitLogger();
+    LogBoostVersion();
+
 #ifdef GLAD_DEBUG
     BOOST_LOG_TRIVIAL(info)<< "Using GLAD with debug callbacks";
 #ifdef NDEBUG
@@ -298,56 +287,11 @@ static void OnGladFunctionCalled(const char * const funcName, void * const /*fun
 }
 #endif
 
-static void SetGLViewportSize(const int width, const int height)
-{
-    assert(width > 0);
-    assert(height > 0);
-
-    glViewport(0, 0, width, height);
-
-    BOOST_LOG_TRIVIAL(debug)<< "Set GL viewport size to " << width << 'x' << height;
-}
-
 static void OnFramebufferSizeChanged(GLFWwindow * const /*window*/, const int width, const int height)
 {
     BOOST_LOG_TRIVIAL(info)<< "Framebuffer size changed to " << width << 'x' << height;
 
-    SetGLViewportSize(width, height);
-}
-
-static UniqueShader CompileShaderFromFile(const GLenum shaderType, const std::string & shaderSourceFilename)
-{
-    const std::string shaderSource = ReadFileContent(SHADERS_DIR + shaderSourceFilename);
-    BOOST_LOG_TRIVIAL(debug)<< "Loaded shader source from " << shaderSourceFilename << ":\n" << shaderSource;
-
-    const char * const shaderSourceData = shaderSource.data();
-
-    UniqueShader shader = UniqueShader::Create(shaderType);
-
-    glShaderSource(shader, 1, &shaderSourceData, nullptr);
-    glCompileShader(shader);
-
-    {
-        GLint compilationStatusValue = GL_FALSE;
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &compilationStatusValue);
-
-        if (!compilationStatusValue)
-        {
-            static const size_t MAX_SHADER_COMPILATION_LOG_SIZE = 512;
-
-            std::string compilationLog(MAX_SHADER_COMPILATION_LOG_SIZE, '\0');
-            glGetShaderInfoLog(shader, MAX_SHADER_COMPILATION_LOG_SIZE, nullptr, compilationLog.data());
-
-            BOOST_LOG_TRIVIAL(fatal)<< "Failed to compile shader from " << shaderSourceFilename << ": " << compilationLog;
-
-            assert(false && "shader compilation must succeed");
-
-            // TODO: Replace with a custom exception
-            throw std::runtime_error("Failed to compile shader from " + shaderSourceFilename);
-        }
-    }
-
-    return shader;
+    SetViewportSize(width, height);
 }
 
 static void OnKeyEvent(
@@ -376,19 +320,4 @@ static void OnKeyEvent(
 static void ProcessInput(GLFWwindow * const /*window*/)
 {
     // TODO: Process continuous key presses, mouse position etc.
-}
-
-static void TogglePolygonMode()
-{
-  std::array<GLint, 2> polygonMode{{-1, -1}};
-
-  // This seems to yield either 1 or 2 values (depending on the platform maybe?).
-  // If there are 2 values, the first is for front face mode, the second - for back face.
-  glGetIntegerv(GL_POLYGON_MODE, polygonMode.data());
-
-  const GLint frontFaceMode = polygonMode[0];
-  const GLint backFaceMode  = polygonMode[1];
-  assert(frontFaceMode == backFaceMode || backFaceMode == -1);
-
-  glPolygonMode(GL_FRONT_AND_BACK, frontFaceMode == GL_LINE ? GL_FILL : GL_LINE);
 }
