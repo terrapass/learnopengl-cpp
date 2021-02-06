@@ -7,8 +7,23 @@
 #include "config.h"
 
 //
+// Forward declarations
+//
+
+int GetGlIntegerParam(const GLenum name);
+
+//
 // Utilities
 //
+
+void LogGlInfo()
+{
+    BOOST_LOG_TRIVIAL(info)<< "Using OpenGL version " << glGetString(GL_VERSION);
+    BOOST_LOG_TRIVIAL(info)<< "Using OpenGL renderer " << glGetString(GL_RENDERER);
+
+    BOOST_LOG_TRIVIAL(info)<< "Max number of OpenGL vertex attributes: " << GetMaxVertexAttribs();
+    BOOST_LOG_TRIVIAL(info)<< "Max OpenGL texture size: " << GetMaxTextureSize();
+}
 
 void SetViewportSize(const int width, const int height)
 {
@@ -68,4 +83,29 @@ UniqueShader CompileShaderFromFile(const GLenum shaderType, const std::string & 
     }
 
     return shader;
+}
+
+int GetMaxVertexAttribs()
+{
+    return GetGlIntegerParam(GL_MAX_VERTEX_ATTRIBS);
+}
+
+int GetMaxTextureSize()
+{
+    return GetGlIntegerParam(GL_MAX_TEXTURE_SIZE);
+}
+
+//
+// Service
+//
+
+int GetGlIntegerParam(const GLenum name)
+{
+    static const int INVALID_PARAM_VALUE = -1;
+
+    int result = INVALID_PARAM_VALUE;
+    glGetIntegerv(name, &result);
+    assert(result != INVALID_PARAM_VALUE);
+
+    return result;
 }
