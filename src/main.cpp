@@ -24,7 +24,7 @@ static constexpr int MAIN_ERR_UNKNOWN     = -1;
 static constexpr int MAIN_ERR_INIT_FAILED = -2;
 
 static const std::string VERTEX_SHADER_SOURCE_FILENAME   = "basic.vert";
-static const std::vector<std::string> FRAGMENT_SHADER_SOURCE_FILENAMES{"basic0.frag", "basic1.frag"};
+static const std::string FRAGMENT_SHADER_SOURCE_FILENAME = "basic.frag";
 
 //
 // Forward declarations
@@ -176,48 +176,38 @@ int main()
 
         // SECTION: Shader program setup
         UniqueShader vertexShader   = CompileShaderFromFile(GL_VERTEX_SHADER, VERTEX_SHADER_SOURCE_FILENAME);
+        UniqueShader fragmentShader = CompileShaderFromFile(GL_FRAGMENT_SHADER, FRAGMENT_SHADER_SOURCE_FILENAME);
 
-        const std::vector<UniqueShaderProgram> shaderPrograms = UniqueShaderProgram::CreateMany(2);
+        const UniqueShaderProgram shaderProgram = UniqueShaderProgram::Create();
 
-        for (size_t i = 0; i < shaderPrograms.size(); i++)
+        glAttachShader(shaderProgram, vertexShader);
+        glAttachShader(shaderProgram, fragmentShader);
+        glLinkProgram(shaderProgram);
+
         {
-            const UniqueShaderProgram & shaderProgram = shaderPrograms[i];
+            GLint linkStatusValue = GL_FALSE;
+            glGetProgramiv(shaderProgram, GL_LINK_STATUS, &linkStatusValue);
 
-            assert(i < FRAGMENT_SHADER_SOURCE_FILENAMES.size());
-            const std::string & fragmentShaderSourceFilename = FRAGMENT_SHADER_SOURCE_FILENAMES[i];
-
-            UniqueShader fragmentShader = CompileShaderFromFile(GL_FRAGMENT_SHADER, fragmentShaderSourceFilename);
-
-            glAttachShader(shaderProgram, vertexShader);
-            glAttachShader(shaderProgram, fragmentShader);
-            glLinkProgram(shaderProgram);
-
+            if (!linkStatusValue)
             {
-                GLint linkStatusValue = GL_FALSE;
-                glGetProgramiv(shaderProgram, GL_LINK_STATUS, &linkStatusValue);
+                static const size_t MAX_SHADER_LINKING_LOG_SIZE = 512;
 
-                if (!linkStatusValue)
-                {
-                    static const size_t MAX_SHADER_LINKING_LOG_SIZE = 512;
+                std::string linkingLog(MAX_SHADER_LINKING_LOG_SIZE, '\0');
+                glGetShaderInfoLog(shaderProgram, MAX_SHADER_LINKING_LOG_SIZE, nullptr, linkingLog.data());
 
-                    std::string linkingLog(MAX_SHADER_LINKING_LOG_SIZE, '\0');
-                    glGetShaderInfoLog(shaderProgram, MAX_SHADER_LINKING_LOG_SIZE, nullptr, linkingLog.data());
+                BOOST_LOG_TRIVIAL(fatal)<< "Failed to link shader program: " << linkingLog;
 
-                    BOOST_LOG_TRIVIAL(fatal)<< "Failed to link shader program: " << linkingLog;
+                assert(false && "shader program linking must succeed");
 
-                    assert(false && "shader program linking must succeed");
-
-                    // TODO: Replace with a custom exception
-                    throw std::runtime_error("Failed to link shader program");
-                }
+                // TODO: Replace with a custom exception
+                throw std::runtime_error("Failed to link shader program");
             }
-
-            BOOST_LOG_TRIVIAL(info)<< "Successfully linked shader program from "
-                << VERTEX_SHADER_SOURCE_FILENAME << ", " << fragmentShaderSourceFilename;
-
-            fragmentShader.Reset();
         }
 
+        BOOST_LOG_TRIVIAL(info)<< "Successfully linked shader program from "
+            << VERTEX_SHADER_SOURCE_FILENAME << ", " << FRAGMENT_SHADER_SOURCE_FILENAME;
+
+        fragmentShader.Reset();
         vertexShader.Reset();
 
         // END SECTION
@@ -233,11 +223,11 @@ int main()
             glClearColor(0.5f, 0.75f, 0.75f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            glUseProgram(shaderPrograms[0]);
+            glUseProgram(shaderProgram);
+
             glBindVertexArray(vertexArrayObjects[0]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-            glUseProgram(shaderPrograms[1]);
             glBindVertexArray(vertexArrayObjects[1]);
             glDrawArrays(GL_TRIANGLES, 0, 3);
             // END TODO
