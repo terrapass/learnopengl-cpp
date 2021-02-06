@@ -29,6 +29,8 @@ static const std::unordered_map<std::string, GLenum> SHADER_TYPES_BY_EXTENSION{
 
 static GLenum ExtensionToShaderType(const std::string & extension);
 
+static const char * ShaderTypeToCStr(const GLenum shaderType);
+
 //
 // Utilities
 //
@@ -61,13 +63,17 @@ UniqueShader CompileShaderFromFile(const GLenum shaderType, const std::string & 
             std::string compilationLog(MAX_SHADER_COMPILATION_LOG_SIZE, '\0');
             glGetShaderInfoLog(shader, MAX_SHADER_COMPILATION_LOG_SIZE, nullptr, compilationLog.data());
 
-            BOOST_LOG_TRIVIAL(fatal)<< "Failed to compile shader from " << shaderSourceFilename << ": " << compilationLog;
+            BOOST_LOG_TRIVIAL(fatal)<< "Failed to compile " << ShaderTypeToCStr(shaderType)
+                << " shader " << shader << "from " << shaderSourceFilename << ": " << compilationLog;
 
             assert(false && "shader compilation must succeed");
 
             throw ShaderCompilationException(shaderType, shaderSourceFilename);
         }
     }
+
+    BOOST_LOG_TRIVIAL(debug)<< "Successfully compiled " << ShaderTypeToCStr(shaderType)
+        << " shader " << shader << " from " << shaderSourceFilename;
 
     return shader;
 }
@@ -103,10 +109,10 @@ void LinkShaderProgram(const GLuint shaderProgram)
 //
 
 ShaderCompilationException::ShaderCompilationException(
-    const GLenum        /*shaderType*/, // TODO: Stringify and use in error message
+    const GLenum        shaderType,
     const std::string & shaderSourceFilename
 ):
-    std::runtime_error("Failed to compile shader from " + shaderSourceFilename)
+    std::runtime_error("Failed to compile " + std::string(ShaderTypeToCStr(shaderType)) + " shader from " + shaderSourceFilename)
 {
     // Empty
 }
@@ -127,4 +133,24 @@ static GLenum ExtensionToShaderType(const std::string & extension)
     assert(ShaderTypeIt != SHADER_TYPES_BY_EXTENSION.cend());
 
     return ShaderTypeIt->second;
+}
+
+static const char * ShaderTypeToCStr(const GLenum shaderType)
+{
+    switch (shaderType)
+    {
+    case GL_VERTEX_SHADER:   return "vertex";
+    case GL_GEOMETRY_SHADER: return "geometry";
+#ifdef GLAD_GL_VERSION_4_0
+    case GL_TESS_CONTROL_SHADER:    return "tesselation control";
+    case GL_TESS_EVALUATION_SHADER: return "tesselation evaluation";
+#endif
+    case GL_FRAGMENT_SHADER: return "fragment";
+#ifdef GLAD_GL_VERSION_4_3
+    case GL_COMPUTE_SHADER: return "compute";
+#endif
+    }
+
+    assert(false && "shader type must be valid and supported");
+    return nullptr;
 }
