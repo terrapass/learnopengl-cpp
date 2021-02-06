@@ -53,20 +53,26 @@ inline UniqueShaderProgram MakeShaderProgram(Shader &&... shaders)
 }
 
 template <typename... ShaderFileNames>
-inline UniqueShaderProgram MakeShaderProgramFromFiles(ShaderFileNames &&... shaderSourceFileNames)
+inline UniqueShaderProgram MakeShaderProgramFromFilesPack(ShaderFileNames &&... shaderSourceFilenames)
 {
+    static_assert(sizeof...(shaderSourceFilenames) > 0);
+
     UniqueShaderProgram shaderProgram = MakeShaderProgram(
         CompileShaderFromFile(
-            DetermineShaderTypeFromFilename(shaderSourceFileNames),
-            shaderSourceFileNames
+            DetermineShaderTypeFromFilename(shaderSourceFilenames),
+            shaderSourceFilenames
         )...
     );
 
-    BOOST_LOG_TRIVIAL(info)<< "Successfully linked shader program from "
-        << MakeCommaSeparatedListFromPack(std::forward<ShaderFileNames>(shaderSourceFileNames)...);
+    BOOST_LOG_TRIVIAL(info)<< "Successfully linked shader program " << shaderProgram << "from "
+        << MakeCommaSeparatedListFromPack(std::forward<ShaderFileNames>(shaderSourceFilenames)...);
 
     return shaderProgram;
 }
+
+UniqueShaderProgram MakeShaderProgramFromFiles(const std::vector<std::string> & shaderSourceFilenames);
+
+UniqueShaderProgram MakeShaderProgramFromMatchingFiles(const std::string & matchingFilename);
 
 //
 // Exceptions

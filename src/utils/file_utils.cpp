@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <filesystem>
 
 //
 // Utilities
@@ -26,6 +27,11 @@ std::string GetFileExtension(const std::string & path)
         return "";
 
     return path.substr(lastDotIdx + 1);
+}
+
+bool DoesFileExist(const std::string & path)
+{
+    return std::filesystem::exists(path);
 }
 
 //

@@ -24,8 +24,7 @@ static constexpr int MAIN_ERR_NONE        = 0;
 static constexpr int MAIN_ERR_UNKNOWN     = -1;
 static constexpr int MAIN_ERR_INIT_FAILED = -2;
 
-static const std::string VERTEX_SHADER_SOURCE_FILENAME   = "basic.vert";
-static const std::string FRAGMENT_SHADER_SOURCE_FILENAME = "basic.frag";
+static const std::string SHADER_SOURCES_MATCHING_FILENAME = "basic";
 
 //
 // Forward declarations
@@ -175,10 +174,11 @@ int main()
         glBindBuffer(GL_ARRAY_BUFFER, INVALID_OPENGL_BUFFER);
         // END SECTION
 
-        const UniqueShaderProgram shaderProgram = MakeShaderProgramFromFiles(
-            VERTEX_SHADER_SOURCE_FILENAME,
-            FRAGMENT_SHADER_SOURCE_FILENAME
-        );
+        // const UniqueShaderProgram shaderProgram = MakeShaderProgramFromFilesPack(
+        //     "basic.vert",
+        //     "basic.frag"
+        // );
+        const UniqueShaderProgram shaderProgram = MakeShaderProgramFromMatchingFiles("basic");
 
         // END TODO0
 

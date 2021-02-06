@@ -31,6 +31,8 @@ static GLenum ExtensionToShaderType(const std::string & extension);
 
 static const char * ShaderTypeToCStr(const GLenum shaderType);
 
+static std::string GetFullShaderPath(const std::string & shaderSourceFilename);
+
 //
 // Utilities
 //
@@ -42,7 +44,7 @@ GLenum DetermineShaderTypeFromFilename(const std::string & shaderSourceFilename)
 
 UniqueShader CompileShaderFromFile(const GLenum shaderType, const std::string & shaderSourceFilename)
 {
-    const std::string shaderSource = ReadFileContent(SHADERS_DIR + shaderSourceFilename);
+    const std::string shaderSource = ReadFileContent(GetFullShaderPath(shaderSourceFilename));
     BOOST_LOG_TRIVIAL(debug)<< "Loaded shader source from " << shaderSourceFilename << ":\n" << shaderSource;
 
     const char * const shaderSourceData = shaderSource.data();
@@ -104,6 +106,51 @@ void LinkShaderProgram(const GLuint shaderProgram)
     BOOST_LOG_TRIVIAL(debug)<< "Successfully linked shader program " << shaderProgram;
 }
 
+UniqueShaderProgram MakeShaderProgramFromFiles(const std::vector<std::string> & shaderSourceFilenames)
+{
+    assert(!shaderSourceFilenames.empty());
+
+    UniqueShaderProgram shaderProgram = UniqueShaderProgram::Create();
+
+    for (const std::string & shaderSourceFilename : shaderSourceFilenames)
+    {
+        const GLenum       shaderType = DetermineShaderTypeFromFilename(shaderSourceFilename);
+        const UniqueShader shader     = CompileShaderFromFile(shaderType, shaderSourceFilename);
+
+        glAttachShader(shaderProgram, shader);
+    }
+
+    LinkShaderProgram(shaderProgram);
+
+    BOOST_LOG_TRIVIAL(info)<< "Successfully linked shader program " << shaderProgram << " from "
+        << MakeCommaSeparatedList(shaderSourceFilenames);
+
+    return shaderProgram;
+}
+
+UniqueShaderProgram MakeShaderProgramFromMatchingFiles(const std::string & matchingFilename)
+{
+    assert(!matchingFilename.empty());
+
+    std::vector<std::string> shaderSourceFilenames;
+    shaderSourceFilenames.reserve(SHADER_TYPES_BY_EXTENSION.size());
+
+    for (const auto shaderTypeIt : SHADER_TYPES_BY_EXTENSION)
+    {
+        const std::string & fileExtension = shaderTypeIt.first;
+
+        const std::string shaderSourceFilename = matchingFilename + '.' + fileExtension;
+
+        if (DoesFileExist(GetFullShaderPath(shaderSourceFilename)))
+            shaderSourceFilenames.push_back(shaderSourceFilename);
+    }
+
+    BOOST_LOG_TRIVIAL(info)<< "Found " << shaderSourceFilenames.size() << " matching shader files: "
+        << MakeCommaSeparatedList(shaderSourceFilenames);
+
+    return MakeShaderProgramFromFiles(shaderSourceFilenames);
+}
+
 //
 // Exceptions
 //
@@ -129,10 +176,10 @@ ShaderProgramLinkingException::ShaderProgramLinkingException():
 
 static GLenum ExtensionToShaderType(const std::string & extension)
 {
-    const auto ShaderTypeIt = SHADER_TYPES_BY_EXTENSION.find(extension);
-    assert(ShaderTypeIt != SHADER_TYPES_BY_EXTENSION.cend());
+    const auto shaderTypeIt = SHADER_TYPES_BY_EXTENSION.find(extension);
+    assert(shaderTypeIt != SHADER_TYPES_BY_EXTENSION.cend());
 
-    return ShaderTypeIt->second;
+    return shaderTypeIt->second;
 }
 
 static const char * ShaderTypeToCStr(const GLenum shaderType)
@@ -153,4 +200,12 @@ static const char * ShaderTypeToCStr(const GLenum shaderType)
 
     assert(false && "shader type must be valid and supported");
     return nullptr;
+}
+
+static std::string GetFullShaderPath(const std::string & shaderSourceFilename)
+{
+    assert(SHADERS_DIR.back() == '/' || SHADERS_DIR.empty());
+    assert(!shaderSourceFilename.empty());
+
+    return SHADERS_DIR + shaderSourceFilename;
 }
