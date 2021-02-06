@@ -9,6 +9,8 @@
 
 std::string ReadFileContent(const std::string & path);
 
+std::string GetFileExtension(const std::string & path);
+
 //
 // Exceptions
 //

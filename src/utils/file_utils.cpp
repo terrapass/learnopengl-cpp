@@ -19,6 +19,15 @@ std::string ReadFileContent(const std::string & path)
     return sout.str();
 }
 
+std::string GetFileExtension(const std::string & path)
+{
+    const size_t lastDotIdx = path.rfind('.');
+    if (lastDotIdx == std::string::npos)
+        return "";
+
+    return path.substr(lastDotIdx + 1);
+}
+
 //
 // Exceptions
 //

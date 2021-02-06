@@ -4,6 +4,9 @@
 
 #include <glad/glad.h>
 
+#include "utils/string_utils.h"
+#include "logging.h"
+
 #include "wrappers.h"
 
 //
@@ -32,6 +35,8 @@ inline void AttachShaders(const GLuint shaderProgram, const GLuint headShader, c
 // Utilities
 //
 
+GLenum DetermineShaderTypeFromFilename(const std::string & shaderSourceFilename);
+
 UniqueShader CompileShaderFromFile(const GLenum shaderType, const std::string & shaderSourceFilename);
 
 void LinkShaderProgram(const GLuint shaderProgram);
@@ -43,6 +48,22 @@ inline UniqueShaderProgram MakeShaderProgram(Shader &&... shaders)
 
     detail::AttachShaders(shaderProgram, static_cast<GLuint>(shaders)...);
     LinkShaderProgram(shaderProgram);
+
+    return shaderProgram;
+}
+
+template <typename... ShaderFileNames>
+inline UniqueShaderProgram MakeShaderProgramFromFiles(ShaderFileNames &&... shaderSourceFileNames)
+{
+    UniqueShaderProgram shaderProgram = MakeShaderProgram(
+        CompileShaderFromFile(
+            DetermineShaderTypeFromFilename(shaderSourceFileNames),
+            shaderSourceFileNames
+        )...
+    );
+
+    BOOST_LOG_TRIVIAL(info)<< "Successfully linked shader program from "
+        << MakeCommaSeparatedListFromPack(std::forward<ShaderFileNames>(shaderSourceFileNames)...);
 
     return shaderProgram;
 }

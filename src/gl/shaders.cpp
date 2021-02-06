@@ -1,14 +1,42 @@
 #include "shaders.h"
 
 #include <cassert>
+#include <unordered_map>
 
 #include "utils/file_utils.h"
 #include "config.h"
-#include "logging.h"
+
+//
+// Constants
+//
+
+static const std::unordered_map<std::string, GLenum> SHADER_TYPES_BY_EXTENSION{
+    {"vert", GL_VERTEX_SHADER},
+    {"geom", GL_GEOMETRY_SHADER},
+#ifdef GLAD_GL_VERSION_4_0
+    {"tesc", GL_TESS_CONTROL_SHADER},
+    {"tese", GL_TESS_EVALUATION_SHADER},
+#endif
+    {"frag", GL_FRAGMENT_SHADER},
+#ifdef GLAD_GL_VERSION_4_3
+    {"comp", GL_COMPUTE_SHADER}
+#endif
+};
+
+//
+// Forward declarations
+//
+
+static GLenum ExtensionToShaderType(const std::string & extension);
 
 //
 // Utilities
 //
+
+GLenum DetermineShaderTypeFromFilename(const std::string & shaderSourceFilename)
+{
+    return ExtensionToShaderType(GetFileExtension(shaderSourceFilename));
+}
 
 UniqueShader CompileShaderFromFile(const GLenum shaderType, const std::string & shaderSourceFilename)
 {
@@ -87,4 +115,16 @@ ShaderProgramLinkingException::ShaderProgramLinkingException():
     std::runtime_error("Failed to link shader program")
 {
     // Empty
+}
+
+//
+// Service
+//
+
+static GLenum ExtensionToShaderType(const std::string & extension)
+{
+    const auto ShaderTypeIt = SHADER_TYPES_BY_EXTENSION.find(extension);
+    assert(ShaderTypeIt != SHADER_TYPES_BY_EXTENSION.cend());
+
+    return ShaderTypeIt->second;
 }

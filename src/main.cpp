@@ -175,19 +175,11 @@ int main()
         glBindBuffer(GL_ARRAY_BUFFER, INVALID_OPENGL_BUFFER);
         // END SECTION
 
-        // SECTION: Shader program setup
-        UniqueShader vertexShader   = CompileShaderFromFile(GL_VERTEX_SHADER, VERTEX_SHADER_SOURCE_FILENAME);
-        UniqueShader fragmentShader = CompileShaderFromFile(GL_FRAGMENT_SHADER, FRAGMENT_SHADER_SOURCE_FILENAME);
+        const UniqueShaderProgram shaderProgram = MakeShaderProgramFromFiles(
+            VERTEX_SHADER_SOURCE_FILENAME,
+            FRAGMENT_SHADER_SOURCE_FILENAME
+        );
 
-        const UniqueShaderProgram shaderProgram = MakeShaderProgram(vertexShader, fragmentShader);
-
-        BOOST_LOG_TRIVIAL(info)<< "Successfully linked shader program from "
-            << VERTEX_SHADER_SOURCE_FILENAME << ", " << FRAGMENT_SHADER_SOURCE_FILENAME;
-
-        fragmentShader.Reset();
-        vertexShader.Reset();
-
-        // END SECTION
         // END TODO0
 
         glfwSetKeyCallback(window.get(), &OnKeyEvent);
