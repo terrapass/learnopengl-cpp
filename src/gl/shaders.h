@@ -78,14 +78,14 @@ UniqueShaderProgram MakeShaderProgramFromMatchingFiles(const std::string & match
 // Exceptions
 //
 
-class ShaderCompilationException final: std::runtime_error
+class ShaderCompilationException final: public std::runtime_error
 {
 public: // Construction
 
     explicit ShaderCompilationException(const GLenum shaderType, const std::string & shaderSourceFilename);
 };
 
-class ShaderProgramLinkingException final: std::runtime_error
+class ShaderProgramLinkingException final: public std::runtime_error
 {
 public: // Construction
 
