@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 
 #include "utils/string_utils.h"
 #include "logging.h"
@@ -73,6 +74,13 @@ inline UniqueShaderProgram MakeShaderProgramFromFilesPack(ShaderFileNames &&... 
 UniqueShaderProgram MakeShaderProgramFromFiles(const std::vector<std::string> & shaderSourceFilenames);
 
 UniqueShaderProgram MakeShaderProgramFromMatchingFiles(const std::string & matchingFilename);
+
+GLuint GetCurrentlyUsedShaderProgram();
+
+inline bool IsShaderProgramCurrentlyUsed(const GLuint shaderProgram)
+{
+    return GetCurrentlyUsedShaderProgram() == shaderProgram;
+}
 
 //
 // Exceptions

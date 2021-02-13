@@ -151,6 +151,15 @@ UniqueShaderProgram MakeShaderProgramFromMatchingFiles(const std::string & match
     return MakeShaderProgramFromFiles(shaderSourceFilenames);
 }
 
+GLuint GetCurrentlyUsedShaderProgram()
+{
+    GLint currentShaderProgram = -1;
+    glGetIntegerv(GL_CURRENT_PROGRAM, &currentShaderProgram);
+    assert(currentShaderProgram != -1);
+
+    return static_cast<GLuint>(currentShaderProgram);
+}
+
 //
 // Exceptions
 //

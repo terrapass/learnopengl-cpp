@@ -7,11 +7,13 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
 #include "gl/constants.h"
 #include "gl/wrappers.h"
 #include "gl/utils.h"
 #include "gl/shaders.h"
+#include "gl/StatefulShaderProgram.h"
 #include "utils/boost_utils.h"
 #include "utils/glfw_utils.h"
 #include "utils/collection_utils.h"
@@ -176,11 +178,11 @@ int main()
         glBindBuffer(GL_ARRAY_BUFFER, INVALID_OPENGL_BUFFER);
         // END SECTION
 
-        const UniqueShaderProgram shaderProgram = MakeShaderProgramFromFilesPack(
+        StatefulShaderProgram shaderProgram(MakeShaderProgramFromFilesPack(
             "basic.vert",
             "basic_uniform.frag"
-        );
-        //const UniqueShaderProgram shaderProgram = MakeShaderProgramFromMatchingFiles("basic_link");
+        ));
+        //const UniqueShaderProgram shaderProgram = MakeShaderProgramFromMatchingFiles("basic_attrib");
 
         // END TODO0
 
@@ -194,10 +196,7 @@ int main()
             glClearColor(0.3f, 0.5f, 0.5f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            const int colorUniformLocation = glGetUniformLocation(shaderProgram, "color");
-            assert(colorUniformLocation != INVALID_OPENGL_UNIFORM_LOCATION);
-
-            glUseProgram(shaderProgram);
+            shaderProgram.Use();
 
             const float currentTime = static_cast<float>(glfwGetTime());
 
@@ -207,7 +206,7 @@ int main()
 
             static const float ALPHA = 1.0f;
 
-            glUniform4f(colorUniformLocation, red, green, blue, ALPHA);
+            shaderProgram.SetUniformValueByName("color", glm::vec4(red, green, blue, ALPHA));
 
             glBindVertexArray(vertexArrayObjects[0]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
