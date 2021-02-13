@@ -66,7 +66,7 @@ UniqueShader CompileShaderFromFile(const GLenum shaderType, const std::string & 
             glGetShaderInfoLog(shader, MAX_SHADER_COMPILATION_LOG_SIZE, nullptr, compilationLog.data());
 
             BOOST_LOG_TRIVIAL(fatal)<< "Failed to compile " << ShaderTypeToCStr(shaderType)
-                << " shader " << shader << "from " << shaderSourceFilename << ": " << compilationLog;
+                << " shader " << shader << " from " << shaderSourceFilename << ": " << compilationLog;
 
             assert(false && "shader compilation must succeed");
 
