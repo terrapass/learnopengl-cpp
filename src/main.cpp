@@ -3,6 +3,7 @@
 #include <vector>
 #include <array>
 #include <cmath>
+#include <numbers>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -198,7 +199,15 @@ int main()
 
             glUseProgram(shaderProgram);
 
-            glUniform4f(colorUniformLocation, 1.0f, 0.0f, 1.0f, 1.0f);
+            const float currentTime = static_cast<float>(glfwGetTime());
+
+            const float red   = sin(currentTime);
+            const float green = cos(2.5f*currentTime);
+            const float blue  = 0.33f*std::numbers::pi_v<float> - sin(3.3f*currentTime);
+
+            static const float ALPHA = 1.0f;
+
+            glUniform4f(colorUniformLocation, red, green, blue, ALPHA);
 
             glBindVertexArray(vertexArrayObjects[0]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
