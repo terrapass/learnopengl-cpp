@@ -64,7 +64,7 @@ inline UniqueShaderProgram MakeShaderProgramFromFilesPack(ShaderFileNames &&... 
         )...
     );
 
-    BOOST_LOG_TRIVIAL(info)<< "Successfully linked shader program " << shaderProgram << "from "
+    BOOST_LOG_TRIVIAL(info)<< "Successfully linked shader program " << shaderProgram << " from "
         << MakeCommaSeparatedListFromPack(std::forward<ShaderFileNames>(shaderSourceFilenames)...);
 
     return shaderProgram;
