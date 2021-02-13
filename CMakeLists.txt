@@ -19,6 +19,9 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 # Local GLAD
 add_subdirectory("external/glad_local")
 
+# Local stb_image
+add_subdirectory("external/stb_image_local")
+
 # glm
 add_subdirectory("external/glm")
 
@@ -79,6 +82,7 @@ add_executable(learnopengl ${LEARNOPENGL_SOURCES})
 target_link_libraries(
     learnopengl
     glad_local
+    stb_image_local
     glfw
     ${GLFW_LIBRARIES}
     Boost::log
