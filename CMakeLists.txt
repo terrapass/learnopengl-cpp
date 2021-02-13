@@ -83,16 +83,3 @@ target_link_libraries(
     ${GLFW_LIBRARIES}
     Boost::log
 )
-
-# Copy assets/ directory after building learnopengl
-# Note: `cmake -E copy_directory ...` actually performs directory contents copy, 
-add_custom_command(
-    TARGET learnopengl POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/assets" "$<TARGET_FILE_DIR:learnopengl>/assets"
-)
-
-# Mark assets/ directory to be removed from build directory on `make clean`
-set_directory_properties(
-    PROPERTIES
-    ADDITIONAL_MAKE_CLEAN_FILES "assets"
-)
