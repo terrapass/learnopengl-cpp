@@ -158,7 +158,7 @@ private: // Members
 // Type aliases
 //
 
-using UniqueVAO    = UniqueEntity<detail::VaoTraits>;
+using UniqueVao    = UniqueEntity<detail::VaoTraits>;
 using UniqueBuffer = UniqueEntity<detail::BufferTraits>;
 using UniqueShader = UniqueEntity<detail::ShaderTraits>;
 using UniqueShaderProgram = UniqueEntity<detail::ShaderProgramTraits>;

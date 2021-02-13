@@ -148,7 +148,7 @@ int main()
         };
 
         // SECTION: VAO setup
-        const std::vector<UniqueVAO>    vertexArrayObjects   = UniqueVAO::CreateMany(2);
+        const std::vector<UniqueVao>    vertexArrayObjects   = UniqueVao::CreateMany(2);
         const std::vector<UniqueBuffer> vertexBufferObjects  = UniqueBuffer::CreateMany(2);
 
         const UniqueBuffer elementBufferObject0 = UniqueBuffer::Create();
