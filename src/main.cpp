@@ -2,6 +2,7 @@
 #include <cassert>
 #include <vector>
 #include <array>
+#include <cmath>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -174,11 +175,11 @@ int main()
         glBindBuffer(GL_ARRAY_BUFFER, INVALID_OPENGL_BUFFER);
         // END SECTION
 
-        // const UniqueShaderProgram shaderProgram = MakeShaderProgramFromFilesPack(
-        //     "basic.vert",
-        //     "basic.frag"
-        // );
-        const UniqueShaderProgram shaderProgram = MakeShaderProgramFromMatchingFiles("basic_link");
+        const UniqueShaderProgram shaderProgram = MakeShaderProgramFromFilesPack(
+            "basic.vert",
+            "basic_uniform.frag"
+        );
+        //const UniqueShaderProgram shaderProgram = MakeShaderProgramFromMatchingFiles("basic_link");
 
         // END TODO0
 
@@ -189,10 +190,15 @@ int main()
             ProcessInput(window.get());
 
             // TODO: Extract as scene render logic
-            glClearColor(0.5f, 0.75f, 0.75f, 1.0f);
+            glClearColor(0.3f, 0.5f, 0.5f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
+            const int colorUniformLocation = glGetUniformLocation(shaderProgram, "color");
+            assert(colorUniformLocation != INVALID_OPENGL_UNIFORM_LOCATION);
+
             glUseProgram(shaderProgram);
+
+            glUniform4f(colorUniformLocation, 1.0f, 0.0f, 1.0f, 1.0f);
 
             glBindVertexArray(vertexArrayObjects[0]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
