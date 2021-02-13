@@ -184,10 +184,25 @@ int main()
         // END SECTION
 
         // StatefulShaderProgram shaderProgram(MakeShaderProgramFromFilesPack(
-        //     "basic.vert",
-        //     "basic_uniform.frag"
+        //     "xp_animation.vert",
+        //     "basic_attrib.frag"
         // ));
-        StatefulShaderProgram shaderProgram(MakeShaderProgramFromMatchingFiles("basic_attrib"));
+        StatefulShaderProgram shaderProgram(MakeShaderProgramFromMatchingFiles("xp_animation"));
+
+        glUseProgram(shaderProgram.Get());
+
+        shaderProgram.SetUniformValueByName("displayWidth", static_cast<float>(WINDOW_WIDTH));
+        shaderProgram.SetUniformValueByName("displayHeight", static_cast<float>(WINDOW_HEIGHT));
+
+        const float minAlphaFalloffRadius = 200.0f;
+
+        shaderProgram.SetUniformValueByName("minAlphaFalloffRadius", minAlphaFalloffRadius);
+        shaderProgram.SetUniformValueByName("maxAlphaFalloffRadius", minAlphaFalloffRadius + 50.0f);
+
+        glUseProgram(INVALID_OPENGL_SHADER);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         // END TODO0
 
@@ -202,6 +217,9 @@ int main()
             glClear(GL_COLOR_BUFFER_BIT);
 
             shaderProgram.Use();
+
+            const float elapsedSeconds = static_cast<float>(glfwGetTime());
+            shaderProgram.SetUniformValueByName("elapsedSeconds", elapsedSeconds);
 
             glBindVertexArray(vertexArrayObjects[0]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
