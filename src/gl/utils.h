@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glad/glad.h>
+
 //
 // Utilities
 //
@@ -13,3 +15,5 @@ void TogglePolygonMode();
 int GetMaxVertexAttribs();
 
 int GetMaxTextureSize();
+
+const char * GlErrorToCStr(const GLenum error);

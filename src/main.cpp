@@ -266,7 +266,7 @@ int main()
     }
     catch (const std::exception & e)
     {
-        BOOST_LOG_TRIVIAL(fatal)<< "Unexpected error: " << e.what();
+        BOOST_LOG_TRIVIAL(fatal)<< "Fatal error: " << e.what();
 
         return MAIN_ERR_UNKNOWN;
     }
@@ -292,7 +292,7 @@ static void OnGladFunctionCalled(const char * const funcName, void * const /*fun
     if (errorCode == GL_NO_ERROR)
         return;
 
-    BOOST_LOG_TRIVIAL(error)<< "OpenGL error " << errorCode << " in " << funcName;
+    BOOST_LOG_TRIVIAL(error)<< "OpenGL error " << errorCode << " (" << GlErrorToCStr(errorCode) << ") in " << funcName;
 
     assert(false && "OpenGL calls must succeed");
 }
