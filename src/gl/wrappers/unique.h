@@ -78,6 +78,8 @@ public: // Copy / Move
         m_Value.swap(other.m_Value);
 
         assert(!other.m_Value.has_value());
+
+        return *this;
     }
 
 public: // Factory methods
@@ -158,7 +160,8 @@ private: // Members
 // Type aliases
 //
 
-using UniqueVao    = UniqueEntity<detail::VaoTraits>;
-using UniqueBuffer = UniqueEntity<detail::BufferTraits>;
-using UniqueShader = UniqueEntity<detail::ShaderTraits>;
+using UniqueVao     = UniqueEntity<detail::VaoTraits>;
+using UniqueBuffer  = UniqueEntity<detail::BufferTraits>;
+using UniqueShader  = UniqueEntity<detail::ShaderTraits>;
 using UniqueShaderProgram = UniqueEntity<detail::ShaderProgramTraits>;
+using UniqueTexture = UniqueEntity<detail::TextureTraits>;

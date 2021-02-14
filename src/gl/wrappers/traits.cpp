@@ -108,4 +108,35 @@ void ShaderProgramTraits::Destroy(const GLuint shaderProgram)
     glDeleteProgram(shaderProgram);
 }
 
+//
+// TextureTraits
+//
+
+const char * const TextureTraits::ValueTypeDisplayName = "texture";
+
+GLuint TextureTraits::Create()
+{
+    GLuint texture = INVALID_OPENGL_TEXTURE;
+    glGenTextures(1, &texture);
+    assert(texture != INVALID_OPENGL_TEXTURE);
+
+    return texture;
+}
+
+std::vector<GLuint> TextureTraits::CreateMany(const size_t count)
+{
+    std::vector<GLuint> result(count, INVALID_OPENGL_TEXTURE);
+    assert(result.size() == count);
+
+    glGenTextures(static_cast<GLsizei>(count), result.data());
+
+    assert(std::find(result.cbegin(), result.cend(), INVALID_OPENGL_TEXTURE) == result.cend());
+    return result;
+}
+
+void TextureTraits::Destroy(const GLuint texture)
+{
+    glDeleteTextures(1, &texture);
+}
+
 } // namespace detail

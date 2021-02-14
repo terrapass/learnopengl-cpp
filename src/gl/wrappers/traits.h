@@ -55,4 +55,17 @@ struct ShaderProgramTraits final
     static void Destroy(const GLuint shaderProgram);
 };
 
+struct TextureTraits final
+{
+    using ValueType = GLuint;
+
+    static const char * const ValueTypeDisplayName;
+
+    static GLuint Create();
+
+    static std::vector<GLuint> CreateMany(const size_t count);
+
+    static void Destroy(const GLuint texture);
+};
+
 } // namespace detail

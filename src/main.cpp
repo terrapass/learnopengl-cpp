@@ -14,6 +14,7 @@
 #include "gl/utils.h"
 #include "gl/shaders.h"
 #include "gl/StatefulShaderProgram.h"
+#include "textures/loading.h"
 #include "utils/boost_utils.h"
 #include "utils/glfw_utils.h"
 #include "utils/collection_utils.h"
@@ -135,14 +136,14 @@ int main()
 
         // TODO0: Extract (scene setup logic, shader program loading) and refactor
         const std::vector<float> vertices{
-            // Positions           // RGBs
-            -0.5f, -0.5f, 0.0f,    1.0f, 1.0f, 1.0f,
-            0.5f, -0.5f, 0.0f,     1.0f, 0.0f, 0.0f,
-            -0.5f, 0.5f, 0.0f,     0.0f, 1.0f, 0.0f,
-            0.5f, 0.5f, 0.0f,      1.0f, 1.0f, 0.0f,
-            -0.8f, -0.8f, 0.0f,    0.0f, 0.0f, 1.0f,
-            -0.6f, -0.6f, 0.0f,    1.0f, 0.0f, 1.0f,
-            -0.7f, 0.2f, 0.0f,     0.0f, 1.0f, 1.0f
+            // Positions           // RGBs              // Texture UVs
+            -0.5f, -0.5f, 0.0f,    1.0f, 1.0f, 1.0f,    0.0f, 0.0f,
+            0.5f, -0.5f, 0.0f,     1.0f, 0.0f, 0.0f,    1.0f, 0.0f,
+            -0.5f, 0.5f, 0.0f,     0.0f, 1.0f, 0.0f,    0.0f, 1.0f,
+            0.5f, 0.5f, 0.0f,      1.0f, 1.0f, 0.0f,    1.0f, 1.0f,
+            -0.8f, -0.8f, 0.0f,    0.0f, 0.0f, 1.0f,    0.5f, 0.5f,
+            -0.6f, -0.6f, 0.0f,    1.0f, 0.0f, 1.0f,    1.0f, 0.0f,
+            -0.7f, 0.2f, 0.0f,     0.0f, 1.0f, 1.0f,    0.0f, 1.0f
         };
 
         const std::vector<GLuint> indices0{
@@ -159,50 +160,76 @@ int main()
         glBindVertexArray(vertexArrayObjects[0]);
 
         glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObjects[0]);
-        glBufferData(GL_ARRAY_BUFFER, 4*6*sizeof(float), vertices.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, 4*8*sizeof(float), vertices.data(), GL_STATIC_DRAW);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferObject0);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6*sizeof(float), indices0.data(), GL_STATIC_DRAW);
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(0));
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(0));
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
 
         glBindVertexArray(vertexArrayObjects[1]);
 
         glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObjects[1]);
-        glBufferData(GL_ARRAY_BUFFER, 3*6*sizeof(float), vertices.data() + 4*6, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, 3*8*sizeof(float), vertices.data() + 4*8, GL_STATIC_DRAW);
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(0));
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(0));
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
 
         glBindVertexArray(INVALID_OPENGL_VAO);
         glBindBuffer(GL_ARRAY_BUFFER, INVALID_OPENGL_BUFFER);
         // END SECTION
 
+        // SECTION: Texture setup
+        const UniqueTexture texture = UniqueTexture::Create();
+
+        {
+            const TextureData       textureData     = LoadTextureDataFromFile("rtwe_output_cropped.jpeg");
+            const TextureMetadata & textureMetadata = textureData.GetMetadata();
+
+            glBindTexture(GL_TEXTURE_2D, texture);
+
+            glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                GL_RGB,
+                textureMetadata.Width,
+                textureMetadata.Height,
+                0,
+                GL_RGB,
+                GL_UNSIGNED_BYTE,
+                textureData.GetData()
+            );
+            glGenerateMipmap(GL_TEXTURE_2D);
+
+            glBindTexture(GL_TEXTURE_2D, INVALID_OPENGL_TEXTURE);
+        }
+        // END SECTION
+
+        // SECTION: Shader setup
         // StatefulShaderProgram shaderProgram(MakeShaderProgramFromFilesPack(
         //     "xp_animation.vert",
         //     "basic_attrib.frag"
         // ));
-        StatefulShaderProgram shaderProgram(MakeShaderProgramFromMatchingFiles("xp_animation"));
+        StatefulShaderProgram shaderProgram(MakeShaderProgramFromMatchingFiles("basic_texture"));
 
         glUseProgram(shaderProgram.Get());
 
-        shaderProgram.SetUniformValueByName("displayWidth", static_cast<float>(WINDOW_WIDTH));
-        shaderProgram.SetUniformValueByName("displayHeight", static_cast<float>(WINDOW_HEIGHT));
-
-        const float minAlphaFalloffRadius = 200.0f;
-
-        shaderProgram.SetUniformValueByName("minAlphaFalloffRadius", minAlphaFalloffRadius);
-        shaderProgram.SetUniformValueByName("maxAlphaFalloffRadius", minAlphaFalloffRadius + 50.0f);
+        // TODO: Set constant uniforms
 
         glUseProgram(INVALID_OPENGL_SHADER);
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        // END SECTION
 
         // END TODO0
 
@@ -218,8 +245,7 @@ int main()
 
             shaderProgram.Use();
 
-            const float elapsedSeconds = static_cast<float>(glfwGetTime());
-            shaderProgram.SetUniformValueByName("elapsedSeconds", elapsedSeconds);
+            glBindTexture(GL_TEXTURE_2D, texture);
 
             glBindVertexArray(vertexArrayObjects[0]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

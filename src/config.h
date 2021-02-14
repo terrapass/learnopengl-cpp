@@ -16,4 +16,6 @@ const char * const WINDOW_TITLE = "learnopengl-cpp";
 constexpr int WINDOW_WIDTH  = 800;
 constexpr int WINDOW_HEIGHT = 600;
 
-const std::string SHADERS_DIR = "assets/shaders/";
+const std::string ASSETS_ROOT  = "assets/";
+const std::string SHADERS_DIR  = ASSETS_ROOT + "shaders/";
+const std::string TEXTURES_DIR = ASSETS_ROOT + "textures/";
