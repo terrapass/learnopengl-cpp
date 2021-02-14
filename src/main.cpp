@@ -249,7 +249,9 @@ int main()
             glClear(GL_COLOR_BUFFER_BIT);
 
             shaderProgram.Use();
+            shaderProgram.SetUniformValueByName("tex", 0); // Using GL_TEXTURE0 for this sampler uniform
 
+            glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texture);
 
             glBindVertexArray(vertexArrayObjects[0]);
