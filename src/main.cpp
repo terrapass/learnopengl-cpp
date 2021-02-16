@@ -212,7 +212,7 @@ int main()
             glTexImage2D(
                 GL_TEXTURE_2D,
                 0,
-                GL_RGB,
+                textureMetadata.ChannelsCount == 3 ? GL_RGB : GL_RGBA,
                 textureMetadata.Width,
                 textureMetadata.Height,
                 0,
@@ -257,7 +257,7 @@ int main()
             glClear(GL_COLOR_BUFFER_BIT);
 
             shaderProgram.Use();
-            shaderProgram.SetUniformValueByName("textureMixAmount", 0.5f);
+            shaderProgram.SetUniformValueByName("textureMixAmount", static_cast<float>(sin(glfwGetTime())));
 
             for (int textureIdx = 0; static_cast<size_t>(textureIdx) < textures.size(); textureIdx++)
             {
