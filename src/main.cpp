@@ -189,13 +189,20 @@ int main()
         // END SECTION
 
         // SECTION: Texture setup
-        const UniqueTexture texture = UniqueTexture::Create();
+        static const std::array TEXTURE_FILENAMES{
+            "rtwe_output_cropped.jpeg",
+            "white_pawn.png"
+        };
 
+        const std::vector<UniqueTexture> textures = UniqueTexture::CreateMany(TEXTURE_FILENAMES.size());
+
+        for (int textureIdx = 0; static_cast<size_t>(textureIdx) < textures.size(); textureIdx++)
         {
-            const TextureData       textureData     = LoadTextureDataFromFile("rtwe_output_cropped.jpeg");
+            const TextureData       textureData     = LoadTextureDataFromFile(TEXTURE_FILENAMES[textureIdx]);
             const TextureMetadata & textureMetadata = textureData.GetMetadata();
 
-            glBindTexture(GL_TEXTURE_2D, texture);
+            glActiveTexture(GL_TEXTURE0 + textureIdx); // sic
+            glBindTexture(GL_TEXTURE_2D, textures[textureIdx]);
 
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -209,26 +216,27 @@ int main()
                 textureMetadata.Width,
                 textureMetadata.Height,
                 0,
-                GL_RGB,
+                textureMetadata.ChannelsCount == 3 ? GL_RGB : GL_RGBA,
                 GL_UNSIGNED_BYTE,
                 textureData.GetData()
             );
             glGenerateMipmap(GL_TEXTURE_2D);
-
-            glBindTexture(GL_TEXTURE_2D, INVALID_OPENGL_TEXTURE);
         }
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, INVALID_OPENGL_TEXTURE);
         // END SECTION
 
         // SECTION: Shader setup
-        // StatefulShaderProgram shaderProgram(MakeShaderProgramFromFilesPack(
-        //     "xp_animation.vert",
-        //     "basic_attrib.frag"
-        // ));
-        StatefulShaderProgram shaderProgram(MakeShaderProgramFromMatchingFiles("basic_texture"));
+        StatefulShaderProgram shaderProgram(MakeShaderProgramFromFilesPack(
+            "basic_texture.vert",
+            "basic_multitexture.frag"
+        ));
+        //StatefulShaderProgram shaderProgram(MakeShaderProgramFromMatchingFiles("basic_texture"));
 
-        glUseProgram(shaderProgram.Get());
-
-        // TODO: Set constant uniforms
+        shaderProgram.Use();
+        shaderProgram.SetUniformValueByName("tex0", 0); // Using GL_TEXTURE0 for this sampler uniform
+        shaderProgram.SetUniformValueByName("tex1", 1); // ...GL_TEXTURE1...
 
         glUseProgram(INVALID_OPENGL_SHADER);
 
@@ -249,10 +257,13 @@ int main()
             glClear(GL_COLOR_BUFFER_BIT);
 
             shaderProgram.Use();
-            shaderProgram.SetUniformValueByName("tex", 0); // Using GL_TEXTURE0 for this sampler uniform
+            shaderProgram.SetUniformValueByName("textureMixAmount", 0.5f);
 
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, texture);
+            for (int textureIdx = 0; static_cast<size_t>(textureIdx) < textures.size(); textureIdx++)
+            {
+                glActiveTexture(GL_TEXTURE0 + textureIdx); // sic
+                glBindTexture(GL_TEXTURE_2D, textures[textureIdx]);
+            }
 
             glBindVertexArray(vertexArrayObjects[0]);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

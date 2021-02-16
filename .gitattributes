@@ -1,1 +1,2 @@
 assets/textures/rtwe_output_cropped.jpeg filter=lfs diff=lfs merge=lfs -text
+assets/textures/white_pawn.png filter=lfs diff=lfs merge=lfs -text
