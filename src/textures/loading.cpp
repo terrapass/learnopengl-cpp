@@ -19,6 +19,8 @@ static std::string GetFullTexturePath(const std::string & textureFilename);
 
 TextureData LoadTextureDataFromFile(const std::string & textureFilename)
 {
+    stbi_set_flip_vertically_on_load(true);
+
     TextureMetadata metadata;
     metadata.SourceName = textureFilename;
 
