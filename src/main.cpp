@@ -49,7 +49,7 @@ static void OnKeyEvent(
     const int          mods
 );
 
-static void ProcessInput(GLFWwindow * const window);
+static void ProcessInput(GLFWwindow * const window, float * const textureMixAmount /* FIXME: Ugh... */);
 
 //
 // Main
@@ -248,16 +248,18 @@ int main()
 
         glfwSetKeyCallback(window.get(), &OnKeyEvent);
 
+        float textureMixAmount = 0.0f;
+
         while (!glfwWindowShouldClose(window.get()))
         {
-            ProcessInput(window.get());
+            ProcessInput(window.get(), &textureMixAmount);
 
             // TODO: Extract as scene render logic
             glClearColor(0.3f, 0.5f, 0.5f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
             shaderProgram.Use();
-            shaderProgram.SetUniformValueByName("textureMixAmount", static_cast<float>(sin(glfwGetTime())));
+            shaderProgram.SetUniformValueByName("textureMixAmount", textureMixAmount);
 
             for (int textureIdx = 0; static_cast<size_t>(textureIdx) < textures.size(); textureIdx++)
             {
@@ -346,7 +348,16 @@ static void OnKeyEvent(
     }
 }
 
-static void ProcessInput(GLFWwindow * const /*window*/)
+static void ProcessInput(GLFWwindow * const window, float * const textureMixAmount)
 {
-    // TODO: Process continuous key presses, mouse position etc.
+    static const float MIN_TEXTURE_MIX_AMOUNT  = -1.0f;
+    static const float MAX_TEXTURE_MIX_AMOUNT  = 1.0f;
+    static const float TEXTURE_MIX_AMOUNT_STEP = 0.0025f;
+
+    assert(textureMixAmount != nullptr);
+
+    if (*textureMixAmount < MAX_TEXTURE_MIX_AMOUNT && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        *textureMixAmount += TEXTURE_MIX_AMOUNT_STEP;
+    else if (*textureMixAmount > MIN_TEXTURE_MIX_AMOUNT && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        *textureMixAmount -= TEXTURE_MIX_AMOUNT_STEP;
 }
