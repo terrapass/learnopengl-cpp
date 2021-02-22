@@ -20,7 +20,8 @@ using UniformValue = std::variant<
     glm::vec1,
     glm::vec2,
     glm::vec3,
-    glm::vec4
+    glm::vec4,
+    glm::mat4
 >;
 
 //

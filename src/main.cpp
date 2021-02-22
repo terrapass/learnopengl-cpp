@@ -5,9 +5,12 @@
 #include <cmath>
 #include <numbers>
 
+#include <boost/format.hpp>
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "gl/constants.h"
 #include "gl/wrappers.h"
@@ -49,7 +52,7 @@ static void OnKeyEvent(
     const int          mods
 );
 
-static void ProcessInput(GLFWwindow * const window, float * const textureMixAmount /* FIXME: Ugh... */);
+static void ProcessInput(GLFWwindow * const window, float * const renderParamValue /* FIXME: Ugh... */);
 
 //
 // Main
@@ -190,8 +193,8 @@ int main()
 
         // SECTION: Texture setup
         static const std::array TEXTURE_FILENAMES{
-            "rtwe_output_cropped.jpeg",
-            "white_pawn.png"
+            "rtwe_output_cropped.jpeg"/*,
+            "white_pawn.png"*/
         };
 
         const std::vector<UniqueTexture> textures = UniqueTexture::CreateMany(TEXTURE_FILENAMES.size());
@@ -229,14 +232,14 @@ int main()
 
         // SECTION: Shader setup
         StatefulShaderProgram shaderProgram(MakeShaderProgramFromFilesPack(
-            "basic_texture.vert",
-            "basic_multitexture.frag"
+            "basic_transform.vert",
+            "basic_texture.frag"
         ));
         //StatefulShaderProgram shaderProgram(MakeShaderProgramFromMatchingFiles("basic_texture"));
 
         shaderProgram.Use();
-        shaderProgram.SetUniformValueByName("tex0", 0); // Using GL_TEXTURE0 for this sampler uniform
-        shaderProgram.SetUniformValueByName("tex1", 1); // ...GL_TEXTURE1...
+        shaderProgram.SetUniformValueByName("tex", 0); // Using GL_TEXTURE0 for this sampler uniform
+        //shaderProgram.SetUniformValueByName("tex1", 1); // ...GL_TEXTURE1...
 
         glUseProgram(INVALID_OPENGL_SHADER);
 
@@ -248,18 +251,26 @@ int main()
 
         glfwSetKeyCallback(window.get(), &OnKeyEvent);
 
-        float textureMixAmount = 0.0f;
+        float renderParamValue = 0.0f;
 
         while (!glfwWindowShouldClose(window.get()))
         {
-            ProcessInput(window.get(), &textureMixAmount);
+            ProcessInput(window.get(), &renderParamValue);
 
             // TODO: Extract as scene render logic
             glClearColor(0.3f, 0.5f, 0.5f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
             shaderProgram.Use();
-            shaderProgram.SetUniformValueByName("textureMixAmount", textureMixAmount);
+
+            static const glm::vec3 ROTATION_AXIS = glm::normalize(glm::vec3(2.0f, -1.3f, 0.4f));
+
+            const float     uniformScale   = 1.0f + 0.5f*glm::sin(static_cast<float>(glfwGetTime()));
+            const glm::mat4 scaleMatrix    = glm::scale(glm::mat4(1.0f), glm::vec3(uniformScale, uniformScale, uniformScale));
+            const glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), renderParamValue*std::numbers::pi_v<float>, ROTATION_AXIS);
+            const glm::mat4 transform      = scaleMatrix * rotationMatrix;
+
+            shaderProgram.SetUniformValueByName("transform", transform);
 
             for (int textureIdx = 0; static_cast<size_t>(textureIdx) < textures.size(); textureIdx++)
             {
@@ -348,16 +359,16 @@ static void OnKeyEvent(
     }
 }
 
-static void ProcessInput(GLFWwindow * const window, float * const textureMixAmount)
+static void ProcessInput(GLFWwindow * const window, float * const renderParamValue)
 {
-    static const float MIN_TEXTURE_MIX_AMOUNT  = -1.0f;
-    static const float MAX_TEXTURE_MIX_AMOUNT  = 1.0f;
-    static const float TEXTURE_MIX_AMOUNT_STEP = 0.0025f;
+    static const float MIN_RENDER_PARAM_VALUE  = -1.0f;
+    static const float MAX_RENDER_PARAM_VALUE  = 1.0f;
+    static const float RENDER_PARAM_STEP       = 0.0025f;
 
-    assert(textureMixAmount != nullptr);
+    assert(renderParamValue != nullptr);
 
-    if (*textureMixAmount < MAX_TEXTURE_MIX_AMOUNT && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        *textureMixAmount += TEXTURE_MIX_AMOUNT_STEP;
-    else if (*textureMixAmount > MIN_TEXTURE_MIX_AMOUNT && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        *textureMixAmount -= TEXTURE_MIX_AMOUNT_STEP;
+    if (*renderParamValue < MAX_RENDER_PARAM_VALUE && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        *renderParamValue += RENDER_PARAM_STEP;
+    else if (*renderParamValue > MIN_RENDER_PARAM_VALUE && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        *renderParamValue -= RENDER_PARAM_STEP;
 }

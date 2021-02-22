@@ -3,6 +3,8 @@
 #include <cassert>
 #include <string>
 
+#include <glm/gtc/type_ptr.hpp>
+
 #include "constants.h"
 #include "shaders.h"
 
@@ -61,6 +63,11 @@ public: // Interface
     void operator()(const glm::vec4 & value) const
     {
         glUniform4f(UniformLocation, value.x, value.y, value.z, value.w);
+    }
+
+    void operator()(const glm::mat4 & value) const
+    {
+        glUniformMatrix4fv(UniformLocation, 1, GL_FALSE, glm::value_ptr(value));
     }
 };
 
