@@ -232,14 +232,26 @@ int main()
 
         // SECTION: Shader setup
         StatefulShaderProgram shaderProgram(MakeShaderProgramFromFilesPack(
-            "basic_transform.vert",
+            "basic_mvp.vert",
             "basic_texture.frag"
         ));
         //StatefulShaderProgram shaderProgram(MakeShaderProgramFromMatchingFiles("basic_texture"));
 
         shaderProgram.Use();
+
         shaderProgram.SetUniformValueByName("tex", 0); // Using GL_TEXTURE0 for this sampler uniform
         //shaderProgram.SetUniformValueByName("tex1", 1); // ...GL_TEXTURE1...
+
+        const glm::mat4 model      = glm::rotate(glm::mat4(1.0f), -1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+        const glm::mat4 projection = glm::perspective(
+            0.5f * std::numbers::pi_v<float>,
+            static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_WIDTH),
+            0.1f,
+            100.0f
+        );
+
+        shaderProgram.SetUniformValueByName("model", model);
+        shaderProgram.SetUniformValueByName("projection", projection);
 
         glUseProgram(INVALID_OPENGL_SHADER);
 
@@ -263,16 +275,15 @@ int main()
 
             shaderProgram.Use();
 
-            static const glm::vec3 TRANSLATION(0.5f, 0.35f, 0.0f);
-            static const glm::vec3 ROTATION_AXIS = glm::normalize(glm::vec3(2.0f, -1.3f, 0.4f));
+            static const glm::vec3 CAMERA_TRANSLATION_BASE(0.0f, 0.0f, 3.0f);
+            static const float     CAMERA_TRANSLATION_Z_MAX_DELTA = 1.5f;
 
-            const float     uniformScale      = 1.0f + 0.5f*glm::sin(static_cast<float>(glfwGetTime()));
-            const glm::mat4 scaleMatrix       = glm::scale(glm::mat4(1.0f), glm::vec3(uniformScale, uniformScale, uniformScale));
-            const glm::mat4 rotationMatrix    = glm::rotate(glm::mat4(1.0f), renderParamValue*std::numbers::pi_v<float>, ROTATION_AXIS);
-            const glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), TRANSLATION);
-            const glm::mat4 transform         = translationMatrix * rotationMatrix * scaleMatrix;
+            const glm::mat4 view = glm::translate(
+                glm::mat4(1.0f),
+                -(CAMERA_TRANSLATION_BASE - glm::vec3(0.0f, 0.0f, renderParamValue * CAMERA_TRANSLATION_Z_MAX_DELTA))
+            );
 
-            shaderProgram.SetUniformValueByName("transform", transform);
+            shaderProgram.SetUniformValueByName("view", view);
 
             for (int textureIdx = 0; static_cast<size_t>(textureIdx) < textures.size(); textureIdx++)
             {
