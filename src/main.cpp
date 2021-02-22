@@ -263,12 +263,14 @@ int main()
 
             shaderProgram.Use();
 
+            static const glm::vec3 TRANSLATION(0.5f, 0.35f, 0.0f);
             static const glm::vec3 ROTATION_AXIS = glm::normalize(glm::vec3(2.0f, -1.3f, 0.4f));
 
-            const float     uniformScale   = 1.0f + 0.5f*glm::sin(static_cast<float>(glfwGetTime()));
-            const glm::mat4 scaleMatrix    = glm::scale(glm::mat4(1.0f), glm::vec3(uniformScale, uniformScale, uniformScale));
-            const glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), renderParamValue*std::numbers::pi_v<float>, ROTATION_AXIS);
-            const glm::mat4 transform      = scaleMatrix * rotationMatrix;
+            const float     uniformScale      = 1.0f + 0.5f*glm::sin(static_cast<float>(glfwGetTime()));
+            const glm::mat4 scaleMatrix       = glm::scale(glm::mat4(1.0f), glm::vec3(uniformScale, uniformScale, uniformScale));
+            const glm::mat4 rotationMatrix    = glm::rotate(glm::mat4(1.0f), renderParamValue*std::numbers::pi_v<float>, ROTATION_AXIS);
+            const glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), TRANSLATION);
+            const glm::mat4 transform         = translationMatrix * rotationMatrix * scaleMatrix;
 
             shaderProgram.SetUniformValueByName("transform", transform);
 
