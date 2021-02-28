@@ -202,6 +202,14 @@ int main()
         shaderProgram.SetUniformValueByName("projection", projection);
 
         glUseProgram(INVALID_OPENGL_SHADER);
+
+        const std::array cubePositions{
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(-3.0f, 3.0f, -1.0f),
+            glm::vec3(2.0f, -3.0f, -2.0f),
+            glm::vec3(0.5f, -2.0f, -1.0f),
+            glm::vec3(1.5f, 2.0f, -5.0f)
+        };
         // END SECTION
 
         glEnable(GL_BLEND);
@@ -227,17 +235,11 @@ int main()
             static const glm::vec3 CAMERA_TRANSLATION_BASE(0.0f, 0.0f, 3.0f);
             static const float     CAMERA_TRANSLATION_Z_MAX_DELTA = 1.5f;
 
-            const glm::mat4 model = glm::rotate(
-                glm::mat4(1.0f),
-                static_cast<float>(glfwGetTime()) / std::numbers::pi_v<float>,
-                glm::normalize(glm::vec3(0.5f, 1.0f, 0.0f))
-            );
             const glm::mat4 view  = glm::translate(
                 glm::mat4(1.0f),
                 -(CAMERA_TRANSLATION_BASE - glm::vec3(0.0f, 0.0f, renderParamValue * CAMERA_TRANSLATION_Z_MAX_DELTA))
             );
 
-            shaderProgram.SetUniformValueByName("model", model);
             shaderProgram.SetUniformValueByName("view",  view);
 
             for (int textureIdx = 0; static_cast<size_t>(textureIdx) < textures.size(); textureIdx++)
@@ -246,8 +248,21 @@ int main()
                 glBindTexture(GL_TEXTURE_2D, textures[textureIdx]);
             }
 
-            glBindVertexArray(cubeMesh.VertexArrayObject);
-            glDrawElements(GL_TRIANGLES, cubeMesh.ElementsCount, GL_UNSIGNED_INT, 0);
+            for (size_t i = 0; i < cubePositions.size(); i++)
+            {
+                const glm::vec3 & cubePosition = cubePositions[i];
+
+                const glm::mat4 model = glm::rotate(
+                    glm::translate(glm::mat4(1.0f), cubePosition),
+                    static_cast<float>(i) + static_cast<float>(glfwGetTime()) / std::numbers::pi_v<float>,
+                    glm::normalize(glm::vec3(0.5f, 1.0f, 0.0f))
+                );
+
+                shaderProgram.SetUniformValueByName("model", model);
+
+                glBindVertexArray(cubeMesh.VertexArrayObject);
+                glDrawElements(GL_TRIANGLES, cubeMesh.ElementsCount, GL_UNSIGNED_INT, 0);
+            }
             // END TODO
 
             glfwSwapBuffers(window.get());
