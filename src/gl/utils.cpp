@@ -59,6 +59,21 @@ int GetMaxTextureSize()
     return GetGlIntegerParam(GL_MAX_TEXTURE_SIZE);
 }
 
+GLuint GetBoundVertexArray()
+{
+    return static_cast<GLuint>(GetGlIntegerParam(GL_VERTEX_ARRAY_BINDING));
+}
+
+GLuint GetBoundArrayBuffer()
+{
+    return static_cast<GLuint>(GetGlIntegerParam(GL_ARRAY_BUFFER_BINDING));
+}
+
+GLuint GetBoundElementArrayBuffer()
+{
+    return static_cast<GLuint>(GetGlIntegerParam(GL_ELEMENT_ARRAY_BUFFER_BINDING));
+}
+
 const char * GlErrorToCStr(const GLenum error)
 {
     switch (error)

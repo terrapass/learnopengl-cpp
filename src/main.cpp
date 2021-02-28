@@ -17,10 +17,10 @@
 #include "gl/utils.h"
 #include "gl/shaders.h"
 #include "gl/StatefulShaderProgram.h"
+#include "meshes/construction.h"
 #include "textures/loading.h"
 #include "utils/boost_utils.h"
 #include "utils/glfw_utils.h"
-#include "utils/collection_utils.h"
 #include "config.h"
 #include "logging.h"
 
@@ -138,57 +138,7 @@ int main()
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
         // TODO0: Extract (scene setup logic, shader program loading) and refactor
-        const std::vector<float> vertices{
-            // Positions           // RGBs              // Texture UVs
-            -0.5f, -0.5f, 0.0f,    1.0f, 1.0f, 1.0f,    0.0f, 0.0f,
-            0.5f, -0.5f, 0.0f,     1.0f, 0.0f, 0.0f,    1.0f, 0.0f,
-            -0.5f, 0.5f, 0.0f,     0.0f, 1.0f, 0.0f,    0.0f, 1.0f,
-            0.5f, 0.5f, 0.0f,      1.0f, 1.0f, 0.0f,    1.0f, 1.0f,
-            -0.8f, -0.8f, 0.0f,    0.0f, 0.0f, 1.0f,    0.5f, 0.5f,
-            -0.6f, -0.6f, 0.0f,    1.0f, 0.0f, 1.0f,    1.0f, 0.0f,
-            -0.7f, 0.2f, 0.0f,     0.0f, 1.0f, 1.0f,    0.0f, 1.0f
-        };
-
-        const std::vector<GLuint> indices0{
-            0, 1, 2,
-            1, 2, 3
-        };
-
-        // SECTION: VAO setup
-        const std::vector<UniqueVao>    vertexArrayObjects   = UniqueVao::CreateMany(2);
-        const std::vector<UniqueBuffer> vertexBufferObjects  = UniqueBuffer::CreateMany(2);
-
-        const UniqueBuffer elementBufferObject0 = UniqueBuffer::Create();
-
-        glBindVertexArray(vertexArrayObjects[0]);
-
-        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObjects[0]);
-        glBufferData(GL_ARRAY_BUFFER, 4*8*sizeof(float), vertices.data(), GL_STATIC_DRAW);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferObject0);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6*sizeof(float), indices0.data(), GL_STATIC_DRAW);
-
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(0));
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glEnableVertexAttribArray(2);
-
-        glBindVertexArray(vertexArrayObjects[1]);
-
-        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObjects[1]);
-        glBufferData(GL_ARRAY_BUFFER, 3*8*sizeof(float), vertices.data() + 4*8, GL_STATIC_DRAW);
-
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(0));
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glEnableVertexAttribArray(2);
-
-        glBindVertexArray(INVALID_OPENGL_VAO);
-        glBindBuffer(GL_ARRAY_BUFFER, INVALID_OPENGL_BUFFER);
+        const MeshData cubeMesh = CreateUnitCubeMesh(true, false);
         // END SECTION
 
         // SECTION: Texture setup
@@ -242,23 +192,22 @@ int main()
         shaderProgram.SetUniformValueByName("tex", 0); // Using GL_TEXTURE0 for this sampler uniform
         //shaderProgram.SetUniformValueByName("tex1", 1); // ...GL_TEXTURE1...
 
-        const glm::mat4 model      = glm::rotate(glm::mat4(1.0f), -1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
         const glm::mat4 projection = glm::perspective(
             0.5f * std::numbers::pi_v<float>,
-            static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_WIDTH),
+            static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT),
             0.1f,
             100.0f
         );
 
-        shaderProgram.SetUniformValueByName("model", model);
         shaderProgram.SetUniformValueByName("projection", projection);
 
         glUseProgram(INVALID_OPENGL_SHADER);
+        // END SECTION
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        // END SECTION
 
+        glEnable(GL_DEPTH_TEST);
         // END TODO0
 
         glfwSetKeyCallback(window.get(), &OnKeyEvent);
@@ -271,19 +220,25 @@ int main()
 
             // TODO: Extract as scene render logic
             glClearColor(0.3f, 0.5f, 0.5f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             shaderProgram.Use();
 
             static const glm::vec3 CAMERA_TRANSLATION_BASE(0.0f, 0.0f, 3.0f);
             static const float     CAMERA_TRANSLATION_Z_MAX_DELTA = 1.5f;
 
-            const glm::mat4 view = glm::translate(
+            const glm::mat4 model = glm::rotate(
+                glm::mat4(1.0f),
+                static_cast<float>(glfwGetTime()) / std::numbers::pi_v<float>,
+                glm::normalize(glm::vec3(0.5f, 1.0f, 0.0f))
+            );
+            const glm::mat4 view  = glm::translate(
                 glm::mat4(1.0f),
                 -(CAMERA_TRANSLATION_BASE - glm::vec3(0.0f, 0.0f, renderParamValue * CAMERA_TRANSLATION_Z_MAX_DELTA))
             );
 
-            shaderProgram.SetUniformValueByName("view", view);
+            shaderProgram.SetUniformValueByName("model", model);
+            shaderProgram.SetUniformValueByName("view",  view);
 
             for (int textureIdx = 0; static_cast<size_t>(textureIdx) < textures.size(); textureIdx++)
             {
@@ -291,11 +246,8 @@ int main()
                 glBindTexture(GL_TEXTURE_2D, textures[textureIdx]);
             }
 
-            glBindVertexArray(vertexArrayObjects[0]);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-            glBindVertexArray(vertexArrayObjects[1]);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glBindVertexArray(cubeMesh.VertexArrayObject);
+            glDrawElements(GL_TRIANGLES, cubeMesh.ElementsCount, GL_UNSIGNED_INT, 0);
             // END TODO
 
             glfwSwapBuffers(window.get());

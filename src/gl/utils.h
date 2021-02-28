@@ -16,4 +16,10 @@ int GetMaxVertexAttribs();
 
 int GetMaxTextureSize();
 
+GLuint GetBoundVertexArray();
+
+GLuint GetBoundArrayBuffer();
+
+GLuint GetBoundElementArrayBuffer();
+
 const char * GlErrorToCStr(const GLenum error);
