@@ -138,7 +138,7 @@ int main()
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
         // TODO0: Extract (scene setup logic, shader program loading) and refactor
-        const MeshData cubeMesh = CreateUnitCubeMesh(true, false);
+        const Mesh cubeMesh = CreateUnitCubeMesh(false, true, false);
         // END SECTION
 
         // SECTION: Texture setup
@@ -248,6 +248,8 @@ int main()
                 glBindTexture(GL_TEXTURE_2D, textures[textureIdx]);
             }
 
+            cubeMesh.Bind();
+
             for (size_t i = 0; i < cubePositions.size(); i++)
             {
                 const glm::vec3 & cubePosition = cubePositions[i];
@@ -260,8 +262,7 @@ int main()
 
                 shaderProgram.SetUniformValueByName("model", model);
 
-                glBindVertexArray(cubeMesh.VertexArrayObject);
-                glDrawElements(GL_TRIANGLES, cubeMesh.ElementsCount, GL_UNSIGNED_INT, 0);
+                cubeMesh.Render(GL_TRIANGLES);
             }
             // END TODO
 

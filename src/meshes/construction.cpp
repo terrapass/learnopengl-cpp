@@ -2,6 +2,7 @@
 
 #include <array>
 #include <vector>
+#include <tuple>
 
 #include "gl/utils.h"
 #include "utils/collection_utils.h"
@@ -68,7 +69,17 @@ static std::vector<float> VerticesToVertexData(const std::vector<Vertex> & verti
     return result;
 }
 
-static UniqueVao MakeIndexedVao(const std::vector<Vertex> & vertices, const std::vector<GLuint> & indices)
+static void SetupGlVertexLayout()
+{
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, Vertex::FLOATS_PER_VERTEX*sizeof(float), (void*)(0));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, Vertex::FLOATS_PER_VERTEX*sizeof(float), (void*)(3*sizeof(float)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, Vertex::FLOATS_PER_VERTEX*sizeof(float), (void*)(6*sizeof(float)));
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+}
+
+static MeshData MakeIndexedMeshData(const std::vector<Vertex> & vertices, const std::vector<GLuint> & indices)
 {
     const GLuint oldVertexArray = GetBoundVertexArray();
     const GLuint oldArrayBuffer = GetBoundArrayBuffer();
@@ -90,24 +101,50 @@ static UniqueVao MakeIndexedVao(const std::vector<Vertex> & vertices, const std:
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferObject);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, SizeOfCollectionData(indices), indices.data(), GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, Vertex::FLOATS_PER_VERTEX*sizeof(float), (void*)(0));
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, Vertex::FLOATS_PER_VERTEX*sizeof(float), (void*)(3*sizeof(float)));
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, Vertex::FLOATS_PER_VERTEX*sizeof(float), (void*)(6*sizeof(float)));
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
+    SetupGlVertexLayout();
 
     glBindVertexArray(oldVertexArray);
     glBindBuffer(GL_ARRAY_BUFFER, oldArrayBuffer);
 
-    return vertexArrayObject;
+    return MeshData{
+        std::move(vertexArrayObject),
+        static_cast<GLsizei>(indices.size()),
+        true
+    };
 }
 
-//
-// Utilities
-//
+static MeshData MakeUnindexedMeshData(const std::vector<Vertex> & vertices)
+{
+    const GLuint oldVertexArray = GetBoundVertexArray();
+    const GLuint oldArrayBuffer = GetBoundArrayBuffer();
 
-MeshData CreateAabbMesh(const glm::vec3 & minCoords, const glm::vec3 & maxCoords, const bool mustUseAxisTint)
+    const std::vector<float> vertexData = VerticesToVertexData(vertices);
+
+    UniqueVao          vertexArrayObject   = UniqueVao::Create();
+    const UniqueBuffer vertexBufferObject  = UniqueBuffer::Create();
+
+    glBindVertexArray(vertexArrayObject);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
+    glBufferData(GL_ARRAY_BUFFER, SizeOfCollectionData(vertexData), vertices.data(), GL_STATIC_DRAW);
+
+    SetupGlVertexLayout();
+
+    glBindVertexArray(oldVertexArray);
+    glBindBuffer(GL_ARRAY_BUFFER, oldArrayBuffer);
+
+    return MeshData{
+        std::move(vertexArrayObject),
+        static_cast<GLsizei>(vertexData.size()),
+        false
+    };
+}
+
+static std::tuple<std::vector<Vertex>, std::vector<GLuint>> CreateRawAabbMeshData(
+    const glm::vec3 & minCoords,
+    const glm::vec3 & maxCoords,
+    const bool        mustUseAxisTint
+)
 {
     static const size_t VERTICES_COUNT = 8;
 
@@ -157,8 +194,118 @@ MeshData CreateAabbMesh(const glm::vec3 & minCoords, const glm::vec3 & maxCoords
         1, 5, 7
     };
 
-    return MeshData{
-        MakeIndexedVao(vertices, indices),
-        static_cast<GLsizei>(indices.size())
-    };
+    return std::make_tuple(vertices, indices);
+}
+
+static MeshData CreateIndexedAabbMeshData(const glm::vec3 & minCoords, const glm::vec3 & maxCoords, const bool mustUseAxisTint)
+{
+    std::vector<Vertex> vertices;
+    std::vector<GLuint> indices;
+
+    std::tie(vertices, indices) = CreateRawAabbMeshData(minCoords, maxCoords, mustUseAxisTint);
+
+    return MakeIndexedMeshData(vertices, indices);
+}
+
+static MeshData CreateUnindexedAabbMeshData(const glm::vec3 & minCoords, const glm::vec3 & maxCoords, const bool mustUseAxisTint)
+{
+    static constexpr size_t UNINDEXED_VERTEX_COUNT = 6 * 2 * 3;
+
+    std::vector<Vertex> rawVertices;
+    std::vector<GLuint> indices;
+
+    std::tie(rawVertices, indices) = CreateRawAabbMeshData(minCoords, maxCoords, mustUseAxisTint);
+    assert(indices.size() == UNINDEXED_VERTEX_COUNT);
+
+    std::vector<Vertex> vertices;
+    vertices.reserve(UNINDEXED_VERTEX_COUNT);
+
+    for (const GLuint index : indices)
+    {
+        assert(index < rawVertices.size());
+
+        vertices.push_back(rawVertices[index]);
+    }
+
+    static const glm::vec2 UV_BOTTOM_LEFT (0.0f, 0.0f);
+    static const glm::vec2 UV_BOTTOM_RIGHT(1.0f, 0.0f);
+    static const glm::vec2 UV_TOP_LEFT    (0.0f, 1.0f);
+    static const glm::vec2 UV_TOP_RIGHT   (1.0f, 1.0f);
+
+    // Triangle 0, 1, 3
+    vertices[0].TextureUv = UV_BOTTOM_RIGHT;
+    vertices[1].TextureUv = UV_BOTTOM_LEFT;
+    vertices[2].TextureUv = UV_TOP_LEFT;
+
+    // Triangle 0, 2, 3
+    vertices[3].TextureUv = UV_BOTTOM_RIGHT;
+    vertices[4].TextureUv = UV_TOP_RIGHT;
+    vertices[5].TextureUv = UV_TOP_LEFT;
+
+    // Triangle 4, 5, 7
+    vertices[6].TextureUv = UV_BOTTOM_LEFT;
+    vertices[7].TextureUv = UV_BOTTOM_RIGHT;
+    vertices[8].TextureUv = UV_TOP_RIGHT;
+
+    // Triangle 4, 6 ,7
+    vertices[9].TextureUv  = UV_BOTTOM_LEFT;
+    vertices[10].TextureUv = UV_TOP_LEFT;
+    vertices[11].TextureUv = UV_TOP_RIGHT;
+
+    // Triangle 2, 3, 7
+    vertices[12].TextureUv = UV_TOP_LEFT;
+    vertices[13].TextureUv = UV_TOP_RIGHT;
+    vertices[14].TextureUv = UV_BOTTOM_RIGHT;
+
+    // Triangle 2, 6, 7
+    vertices[15].TextureUv = UV_TOP_LEFT;
+    vertices[16].TextureUv = UV_BOTTOM_LEFT;
+    vertices[17].TextureUv = UV_BOTTOM_RIGHT;
+
+    // Triangle 0, 1, 5
+    vertices[18].TextureUv = UV_BOTTOM_LEFT;
+    vertices[19].TextureUv = UV_BOTTOM_RIGHT;
+    vertices[20].TextureUv = UV_TOP_RIGHT;
+
+    // Triangle 0, 4, 5
+    vertices[21].TextureUv = UV_BOTTOM_LEFT;
+    vertices[22].TextureUv = UV_TOP_LEFT;
+    vertices[23].TextureUv = UV_TOP_RIGHT;
+
+    // Triangle 0, 2, 6
+    vertices[24].TextureUv = UV_BOTTOM_LEFT;
+    vertices[25].TextureUv = UV_TOP_LEFT;
+    vertices[26].TextureUv = UV_TOP_RIGHT;
+
+    // Triangle 0, 4, 6
+    vertices[27].TextureUv = UV_BOTTOM_LEFT;
+    vertices[28].TextureUv = UV_BOTTOM_RIGHT;
+    vertices[29].TextureUv = UV_TOP_RIGHT;
+
+    // Triangle 1, 3, 7
+    vertices[30].TextureUv = UV_BOTTOM_RIGHT;
+    vertices[31].TextureUv = UV_TOP_RIGHT;
+    vertices[32].TextureUv = UV_TOP_LEFT;
+
+    // Triangle 1, 5, 7
+    vertices[33].TextureUv = UV_BOTTOM_RIGHT;
+    vertices[34].TextureUv = UV_BOTTOM_LEFT;
+    vertices[35].TextureUv = UV_TOP_LEFT;
+
+    static_assert(UNINDEXED_VERTEX_COUNT - 1 == 35);
+
+    return MakeUnindexedMeshData(vertices);
+}
+
+//
+// Utilities
+//
+
+Mesh CreateAabbMesh(const bool mustUseIndices, const glm::vec3 & minCoords, const glm::vec3 & maxCoords, const bool mustUseAxisTint)
+{
+    return Mesh(
+        mustUseIndices
+            ? CreateIndexedAabbMeshData  (minCoords, maxCoords, mustUseAxisTint)
+            : CreateUnindexedAabbMeshData(minCoords, maxCoords, mustUseAxisTint)
+    );
 }
