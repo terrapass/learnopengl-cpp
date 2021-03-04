@@ -232,13 +232,20 @@ int main()
 
             shaderProgram.Use();
 
-            static const glm::vec3 CAMERA_TRANSLATION_BASE(0.0f, 0.0f, 3.0f);
-            static const float     CAMERA_TRANSLATION_Z_MAX_DELTA = 1.5f;
+            static const float CAMERA_RADIUS_BASE      = 3.0f;
+            static const float CAMERA_RADIUS_MAX_DELTA = 1.5f;
+            static const float CAMERA_ANGULAR_SPEED    = -0.5f;
 
-            const glm::mat4 view  = glm::translate(
-                glm::mat4(1.0f),
-                -(CAMERA_TRANSLATION_BASE - glm::vec3(0.0f, 0.0f, renderParamValue * CAMERA_TRANSLATION_Z_MAX_DELTA))
+            const float cameraRadius       = CAMERA_RADIUS_BASE - renderParamValue*CAMERA_RADIUS_MAX_DELTA;
+            const float currentTimeSeconds = glfwGetTime();
+
+            const glm::vec3 cameraPosition(
+                cameraRadius*glm::sin(CAMERA_ANGULAR_SPEED*currentTimeSeconds),
+                0.0f,
+                cameraRadius*glm::cos(CAMERA_ANGULAR_SPEED*currentTimeSeconds)
             );
+
+            const glm::mat4 view  = glm::lookAt(cameraPosition, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
             shaderProgram.SetUniformValueByName("view",  view);
 
