@@ -10,7 +10,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include <glm/ext/matrix_transform.hpp>
 
 #include "gl/constants.h"
 #include "gl/wrappers.h"
@@ -19,6 +19,7 @@
 #include "gl/StatefulShaderProgram.h"
 #include "meshes/construction.h"
 #include "textures/loading.h"
+#include "camera/Camera.h"
 #include "utils/boost_utils.h"
 #include "utils/glfw_utils.h"
 #include "config.h"
@@ -138,6 +139,29 @@ int main()
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
         // TODO0: Extract (scene setup logic, shader program loading) and refactor
+
+        // SECTION: Camera setup
+        static const float CAMERA_RADIUS_BASE      = 3.0f;
+        static const float CAMERA_RADIUS_MAX_DELTA = 1.5f;
+        static const float CAMERA_ANGULAR_SPEED    = -0.5f;
+
+        static const LookAtSettings INITIAL_CAMERA_LOOK_AT_SETTINGS{
+            glm::vec3(0.0f, 0.0f, CAMERA_RADIUS_BASE),
+            glm::vec3(0.0f),
+            glm::vec3(0.0f, 1.0f, 0.0f)
+        };
+
+        static const PerspectiveProjection CAMERA_PROJECTION{
+            0.5f * std::numbers::pi_v<float>,
+            static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT), // FIXME: Doesn't change on window resize
+            0.1f,
+            100.0f
+        };
+
+        Camera camera(INITIAL_CAMERA_LOOK_AT_SETTINGS, CAMERA_PROJECTION);
+        // END SECTION
+
+        // SECTION: Mesh setup
         const Mesh cubeMesh = CreateUnitCubeMesh(false, true, false);
         // END SECTION
 
@@ -192,12 +216,7 @@ int main()
         shaderProgram.SetUniformValueByName("tex", 0); // Using GL_TEXTURE0 for this sampler uniform
         //shaderProgram.SetUniformValueByName("tex1", 1); // ...GL_TEXTURE1...
 
-        const glm::mat4 projection = glm::perspective(
-            0.5f * std::numbers::pi_v<float>,
-            static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT),
-            0.1f,
-            100.0f
-        );
+        const glm::mat4 & projection = camera.GetProjectionMatrix();
 
         shaderProgram.SetUniformValueByName("projection", projection);
 
@@ -232,10 +251,6 @@ int main()
 
             shaderProgram.Use();
 
-            static const float CAMERA_RADIUS_BASE      = 3.0f;
-            static const float CAMERA_RADIUS_MAX_DELTA = 1.5f;
-            static const float CAMERA_ANGULAR_SPEED    = -0.5f;
-
             const float cameraRadius       = CAMERA_RADIUS_BASE - renderParamValue*CAMERA_RADIUS_MAX_DELTA;
             const float currentTimeSeconds = glfwGetTime();
 
@@ -245,7 +260,9 @@ int main()
                 cameraRadius*glm::cos(CAMERA_ANGULAR_SPEED*currentTimeSeconds)
             );
 
-            const glm::mat4 view  = glm::lookAt(cameraPosition, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            camera.GetLookAtSettings().EyePosition = cameraPosition;
+
+            const glm::mat4 & view = camera.GetLookAtMatrix();
 
             shaderProgram.SetUniformValueByName("view",  view);
 
