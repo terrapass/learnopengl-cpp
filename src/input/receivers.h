@@ -10,19 +10,26 @@
 #include "Key.h"
 
 //
-// Concepts
+// IInputReceiver
 //
 
-template <typename T>
-concept InputReceiver = requires(T inputReceiver) {
-    typename T::todo;
+struct IInputReceiver
+{
+public: // Interface
+
+    virtual bool IsKeyDown(const Key key) const = 0;
+
+public: // Signals
+
+    boost::signals2::signal<void(Key)> KeyPressedSignal;
 };
 
 //
 // GlfwInputReceiver
 //
 
-class GlfwInputReceiver final
+class GlfwInputReceiver final:
+    public IInputReceiver
 {
 public: // Singleton accessor
 
@@ -42,11 +49,13 @@ private: // Copy / Move
 
     GlfwInputReceiver & operator=(const GlfwInputReceiver &) = delete;
 
+public: // IInputReceiver
+
+    bool IsKeyDown(const Key key) const override;
+
 public: // Interface
 
     static void InitializeInstance(GLFWwindow * const window);
-
-    bool IsKeyDown() const;
 
 private: // Service
 
@@ -57,10 +66,6 @@ private: // Service
         const int          action,
         const int          mods
     );
-
-public: // Signals
-
-    boost::signals2::signal<void(Key)> KeyPressedSignal;
 
 private: // Statics
 

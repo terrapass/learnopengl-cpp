@@ -20,6 +20,7 @@
 #include "meshes/construction.h"
 #include "textures/loading.h"
 #include "camera/Camera.h"
+#include "camera/controllers.h"
 #include "utils/boost_utils.h"
 #include "utils/glfw_utils.h"
 #include "config.h"
@@ -47,8 +48,6 @@ static void OnGladFunctionCalled(const char * const funcName, void * const funcP
 static void OnFramebufferSizeChanged(GLFWwindow * const /*window*/, const int width, const int height);
 
 static void OnKeyPressed(GLFWwindow * const window, const Key key);
-
-static void ProcessInput(GLFWwindow * const window, float * const renderParamValue /* FIXME: Ugh... */);
 
 //
 // Main
@@ -133,15 +132,18 @@ int main()
         // Set default polygon mode
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
+        // SECTION: Input setup
+        GlfwInputReceiver::InitializeInstance(window.get());
+        GlfwInputReceiver::GetInstance()->KeyPressedSignal.connect(
+            std::bind(&OnKeyPressed, window.get(), std::placeholders::_1)
+        );
+        // END SECTION
+
         // TODO0: Extract (scene setup logic, shader program loading) and refactor
 
         // SECTION: Camera setup
-        static const float CAMERA_RADIUS_BASE      = 3.0f;
-        static const float CAMERA_RADIUS_MAX_DELTA = 1.5f;
-        static const float CAMERA_ANGULAR_SPEED    = -0.5f;
-
         static const LookAtSettings INITIAL_CAMERA_LOOK_AT_SETTINGS{
-            glm::vec3(0.0f, 0.0f, CAMERA_RADIUS_BASE),
+            glm::vec3(0.0f, 0.0f, 1.0f),
             glm::vec3(0.0f),
             glm::vec3(0.0f, 1.0f, 0.0f)
         };
@@ -154,6 +156,15 @@ int main()
         };
 
         Camera camera(INITIAL_CAMERA_LOOK_AT_SETTINGS, CAMERA_PROJECTION);
+
+        AutoRotatingCameraController::Settings cameraControllerSettings;
+        cameraControllerSettings.Target             = glm::vec3(0.0f);
+        cameraControllerSettings.RadiusBase         = 3.0f;
+        cameraControllerSettings.RadiusMaxDelta     = 1.5f;
+        cameraControllerSettings.RadiusChangeFactor = 1.0f;
+        cameraControllerSettings.AngularSpeed       = -0.5f;
+
+        AutoRotatingCameraController cameraController(&camera, GlfwInputReceiver::GetInstance(), std::move(cameraControllerSettings));
         // END SECTION
 
         // SECTION: Mesh setup
@@ -232,33 +243,29 @@ int main()
         glEnable(GL_DEPTH_TEST);
         // END TODO0
 
-        GlfwInputReceiver::InitializeInstance(window.get());
-        GlfwInputReceiver::GetInstance()->KeyPressedSignal.connect(
-            std::bind(&OnKeyPressed, window.get(), std::placeholders::_1)
-        );
+        const uint64_t ticksPerSecond = glfwGetTimerFrequency();
+        const float    secondsPerTick = 1.0f / static_cast<float>(ticksPerSecond);
 
-        float renderParamValue = 0.0f;
+        uint64_t lastTimeTicks = glfwGetTimerValue();
 
         while (!glfwWindowShouldClose(window.get()))
         {
-            ProcessInput(window.get(), &renderParamValue);
+            const uint64_t currentTimeTicks = glfwGetTimerValue();
+            assert(currentTimeTicks >= lastTimeTicks);
+
+            const uint64_t deltaTimeTicks   = currentTimeTicks - lastTimeTicks;
+            const float    deltaTimeSeconds = secondsPerTick*deltaTimeTicks;
+
+            lastTimeTicks = currentTimeTicks;
+
+            // TODO: Use boost signal named updateSignal to implement update loop
+            cameraController.Update(deltaTimeSeconds);
 
             // TODO: Extract as scene render logic
             glClearColor(0.3f, 0.5f, 0.5f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             shaderProgram.Use();
-
-            const float cameraRadius       = CAMERA_RADIUS_BASE - renderParamValue*CAMERA_RADIUS_MAX_DELTA;
-            const float currentTimeSeconds = glfwGetTime();
-
-            const glm::vec3 cameraPosition(
-                cameraRadius*glm::sin(CAMERA_ANGULAR_SPEED*currentTimeSeconds),
-                0.0f,
-                cameraRadius*glm::cos(CAMERA_ANGULAR_SPEED*currentTimeSeconds)
-            );
-
-            camera.GetLookAtSettings().EyePosition = cameraPosition;
 
             const glm::mat4 & view = camera.GetLookAtMatrix();
 
@@ -354,18 +361,4 @@ static void OnKeyPressed(GLFWwindow * const window, const Key key)
         TogglePolygonMode();
         break;
     }
-}
-
-static void ProcessInput(GLFWwindow * const window, float * const renderParamValue)
-{
-    static const float MIN_RENDER_PARAM_VALUE  = -1.0f;
-    static const float MAX_RENDER_PARAM_VALUE  = 1.0f;
-    static const float RENDER_PARAM_STEP       = 0.0025f;
-
-    assert(renderParamValue != nullptr);
-
-    if (*renderParamValue < MAX_RENDER_PARAM_VALUE && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        *renderParamValue += RENDER_PARAM_STEP;
-    else if (*renderParamValue > MIN_RENDER_PARAM_VALUE && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        *renderParamValue -= RENDER_PARAM_STEP;
 }

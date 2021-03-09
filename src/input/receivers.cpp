@@ -35,6 +35,15 @@ GlfwInputReceiver::GlfwInputReceiver(GLFWwindow * const window):
 }
 
 //
+// IInputReceiver
+//
+
+bool GlfwInputReceiver::IsKeyDown(const Key key) const
+{
+    return glfwGetKey(m_Window, KeyToGlfw(key)) == GLFW_PRESS;
+}
+
+//
 // Interface
 //
 

@@ -7,3 +7,5 @@
 //
 
 Key KeyFromGlfw(const int glfwKey);
+
+int KeyToGlfw(const Key key);
