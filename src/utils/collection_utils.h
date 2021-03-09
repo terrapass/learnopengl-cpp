@@ -1,6 +1,6 @@
-#include <concepts>
-
 #pragma once
+
+#include <concepts>
 
 template <typename T>
 concept SizedCollection = requires(T collection) {
