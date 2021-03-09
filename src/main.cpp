@@ -24,6 +24,7 @@
 #include "utils/glfw_utils.h"
 #include "config.h"
 #include "logging.h"
+#include "input.h"
 
 //
 // Constants
@@ -45,13 +46,7 @@ static void OnGladFunctionCalled(const char * const funcName, void * const funcP
 
 static void OnFramebufferSizeChanged(GLFWwindow * const /*window*/, const int width, const int height);
 
-static void OnKeyEvent(
-    GLFWwindow * const window,
-    const int          key,
-    const int          scancode,
-    const int          action,
-    const int          mods
-);
+static void OnKeyPressed(GLFWwindow * const window, const Key key);
 
 static void ProcessInput(GLFWwindow * const window, float * const renderParamValue /* FIXME: Ugh... */);
 
@@ -237,7 +232,10 @@ int main()
         glEnable(GL_DEPTH_TEST);
         // END TODO0
 
-        glfwSetKeyCallback(window.get(), &OnKeyEvent);
+        GlfwInputReceiver::InitializeInstance(window.get());
+        GlfwInputReceiver::GetInstance()->KeyPressedSignal.connect(
+            std::bind(&OnKeyPressed, window.get(), std::placeholders::_1)
+        );
 
         float renderParamValue = 0.0f;
 
@@ -341,24 +339,18 @@ static void OnFramebufferSizeChanged(GLFWwindow * const /*window*/, const int wi
     SetViewportSize(width, height);
 }
 
-static void OnKeyEvent(
-    GLFWwindow * const window,
-    const int          key,
-    const int          /*scancode*/,
-    const int          action,
-    const int          /*mods*/
-)
+static void OnKeyPressed(GLFWwindow * const window, const Key key)
 {
-    if (action != GLFW_PRESS)
-        return;
-
     switch (key)
     {
-    case GLFW_KEY_ESCAPE:
+    default:
+        break;
+
+    case Key::Escape:
         glfwSetWindowShouldClose(window, GLFW_TRUE);
         break;
 
-    case GLFW_KEY_Z:
+    case Key::Z:
         TogglePolygonMode();
         break;
     }
