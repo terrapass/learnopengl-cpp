@@ -157,14 +157,11 @@ int main()
 
         Camera camera(INITIAL_CAMERA_LOOK_AT_SETTINGS, CAMERA_PROJECTION);
 
-        AutoRotatingCameraController::Settings cameraControllerSettings;
-        cameraControllerSettings.Target             = glm::vec3(0.0f);
-        cameraControllerSettings.RadiusBase         = 3.0f;
-        cameraControllerSettings.RadiusMaxDelta     = 1.5f;
-        cameraControllerSettings.RadiusChangeFactor = 1.0f;
-        cameraControllerSettings.AngularSpeed       = -0.5f;
+        FlyCameraController::Settings cameraControllerSettings;
+        cameraControllerSettings.MovementSpeed = 0.5f;
+        cameraControllerSettings.RotationSpeed = 0.5f;
 
-        AutoRotatingCameraController cameraController(&camera, GlfwInputReceiver::GetInstance(), std::move(cameraControllerSettings));
+        FlyCameraController cameraController(&camera, GlfwInputReceiver::GetInstance(), std::move(cameraControllerSettings));
         // END SECTION
 
         // SECTION: Mesh setup

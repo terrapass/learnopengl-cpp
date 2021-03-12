@@ -85,3 +85,36 @@ private: // Members
     float    m_CurrentRadius;
     float    m_CurrentAngle;
 };
+
+//
+// FlyCameraController
+//
+
+class FlyCameraController final:
+  protected detail::BaseCameraController
+{
+public: // Interface types
+
+    struct Settings final
+    {
+        float MovementSpeed;
+        float RotationSpeed;
+    };
+
+public: // Construction
+
+    FlyCameraController(Camera * const camera, IInputReceiver * const inputReceiver, Settings settings);
+
+public: // Interface
+
+    void Update(const float deltaTimeSeconds);
+
+private: // Service
+
+    void ProcessInput(LookAtSettings & cameraLookAtSettings, const float deltaTimeSeconds);
+
+private: // Members
+
+    Settings  m_Settings;
+    glm::vec3 m_LookDirection;
+};

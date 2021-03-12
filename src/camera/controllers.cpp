@@ -69,3 +69,55 @@ void AutoRotatingCameraController::UpdateCameraLookAt()
 
     m_Camera->GetLookAtSettings() = std::move(cameraLookAtSettings);
 }
+
+//
+// FlyCameraController
+//
+
+FlyCameraController::FlyCameraController(
+    Camera * const         camera,
+    IInputReceiver * const inputReceiver,
+    Settings               settings
+):
+    BaseCameraController(camera, inputReceiver),
+    m_Settings          (std::move(settings)),
+    m_LookDirection     (m_Camera->GetLookAtSettings().GetLookDirectionNormalized())
+{
+    // Empty
+}
+
+//
+// Interface
+//
+
+void FlyCameraController::Update(const float deltaTimeSeconds)
+{
+    LookAtSettings & cameraLookAtSettings = m_Camera->GetLookAtSettings();
+
+    ProcessInput(cameraLookAtSettings, deltaTimeSeconds);
+
+    cameraLookAtSettings.SetLookDirectionRaw(m_LookDirection);
+}
+
+//
+// Service
+//
+
+void FlyCameraController::ProcessInput(LookAtSettings & cameraLookAtSettings, const float deltaTimeSeconds)
+{
+    const glm::vec3 lookDirectionRight = glm::normalize(
+        glm::cross(m_LookDirection, cameraLookAtSettings.EyeUpWorld)
+    );
+
+    if (m_InputReceiver->IsKeyDown(Key::W))
+        cameraLookAtSettings.EyePosition += deltaTimeSeconds*m_LookDirection;
+
+    if (m_InputReceiver->IsKeyDown(Key::S))
+        cameraLookAtSettings.EyePosition -= deltaTimeSeconds*m_LookDirection;
+
+    if (m_InputReceiver->IsKeyDown(Key::A))
+        cameraLookAtSettings.EyePosition -= deltaTimeSeconds*lookDirectionRight;
+
+    if (m_InputReceiver->IsKeyDown(Key::D))
+        cameraLookAtSettings.EyePosition += deltaTimeSeconds*lookDirectionRight;
+}

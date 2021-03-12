@@ -12,9 +12,28 @@
 
 struct LookAtSettings final
 {
+public: // Attributes
+
     glm::vec3 EyePosition;
     glm::vec3 Target;
     glm::vec3 EyeUpWorld;
+
+public: // Interface
+
+    inline glm::vec3 GetLookDirectionRaw() const
+    {
+        return Target - EyePosition;
+    }
+
+    inline glm::vec3 GetLookDirectionNormalized() const
+    {
+        return glm::normalize(GetLookDirectionRaw());
+    }
+
+    inline void SetLookDirectionRaw(const glm::vec3 lookDirectionRaw)
+    {
+        Target = EyePosition + lookDirectionRaw;
+    }
 };
 
 //
