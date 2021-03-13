@@ -163,8 +163,9 @@ int main()
         Camera camera(INITIAL_CAMERA_LOOK_AT_SETTINGS, CAMERA_PROJECTION);
 
         FlyCameraController::Settings cameraControllerSettings;
-        cameraControllerSettings.MovementSpeed = 0.5f;
-        cameraControllerSettings.RotationSpeed = 0.5f;
+        cameraControllerSettings.MovementSpeed       = 0.5f;
+        cameraControllerSettings.RotationSensitivity = 0.025f;
+        cameraControllerSettings.MustInvertPitch     = false;
 
         FlyCameraController cameraController(&camera, GlfwInputReceiver::GetInstance(), std::move(cameraControllerSettings));
 

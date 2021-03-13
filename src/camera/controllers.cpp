@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <numbers>
+#include <algorithm>
 
 //
 // AutoRotatingCameraController
@@ -79,11 +80,16 @@ FlyCameraController::FlyCameraController(
     IInputReceiver * const inputReceiver,
     Settings               settings
 ):
-    BaseCameraController(camera, inputReceiver),
-    m_Settings          (std::move(settings)),
-    m_LookDirection     (m_Camera->GetLookAtSettings().GetLookDirectionNormalized())
+    BaseCameraController        (camera, inputReceiver),
+    m_MouseMovedSignalConnection(),
+    m_Settings                  (std::move(settings)),
+    m_LookDirection             (m_Camera->GetLookAtSettings().GetLookDirectionNormalized())
 {
-    // Empty
+    assert(!m_MouseMovedSignalConnection.connected());
+
+    m_MouseMovedSignalConnection = m_InputReceiver->MouseMovedSignal.connect(
+        std::bind(&FlyCameraController::OnMouseMoved, this, std::placeholders::_1)
+    );
 }
 
 //
@@ -92,6 +98,8 @@ FlyCameraController::FlyCameraController(
 
 void FlyCameraController::Update(const float deltaTimeSeconds)
 {
+    UpdateLookDirection();
+
     LookAtSettings & cameraLookAtSettings = m_Camera->GetLookAtSettings();
 
     ProcessInput(cameraLookAtSettings, deltaTimeSeconds);
@@ -120,4 +128,34 @@ void FlyCameraController::ProcessInput(LookAtSettings & cameraLookAtSettings, co
 
     if (m_InputReceiver->IsKeyDown(Key::D))
         cameraLookAtSettings.EyePosition += deltaTimeSeconds*lookDirectionRight;
+}
+
+void FlyCameraController::UpdateLookDirection()
+{
+    m_LookDirection = glm::normalize(glm::vec3(
+        glm::cos(m_Yaw)*glm::cos(m_Pitch),
+        glm::sin(m_Pitch),
+        glm::sin(m_Yaw)*glm::cos(m_Pitch)
+    ));
+}
+
+//
+// Events
+//
+
+void FlyCameraController::OnMouseMoved(const MouseState & mouseState)
+{
+    constexpr float ALMOST_HALF_PI = 0.499f*std::numbers::pi_v<float>;
+
+    if (!mouseState.CursorPositionDelta.has_value())
+        return;
+
+    glm::vec2 eulerAnglesDelta = m_Settings.RotationSensitivity*mouseState.CursorPositionDelta.value();
+
+    m_Yaw += eulerAnglesDelta.x;
+
+    const float pitchInversionMultiplier = m_Settings.MustInvertPitch ? 1.0f : -1.0f;
+
+    // Clamp pitch strictly between -90 and 90 degrees to avoid look-at flip
+    m_Pitch = std::clamp(m_Pitch + pitchInversionMultiplier*eulerAnglesDelta.y, -ALMOST_HALF_PI, ALMOST_HALF_PI);
 }

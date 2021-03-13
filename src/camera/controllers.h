@@ -2,6 +2,8 @@
 
 #include <cassert>
 
+#include <boost/signals2.hpp>
+
 #include <glm/glm.hpp>
 
 #include "input.h"
@@ -98,12 +100,23 @@ public: // Interface types
     struct Settings final
     {
         float MovementSpeed;
-        float RotationSpeed;
+        float RotationSensitivity;
+        bool  MustInvertPitch;
     };
 
 public: // Construction
 
     FlyCameraController(Camera * const camera, IInputReceiver * const inputReceiver, Settings settings);
+
+public: // Copy / Move
+
+    FlyCameraController(const FlyCameraController &) = delete;
+
+    FlyCameraController(FlyCameraController &&);
+
+    FlyCameraController & operator=(const FlyCameraController &) = delete;
+
+    FlyCameraController & operator=(FlyCameraController &&);
 
 public: // Interface
 
@@ -113,8 +126,18 @@ private: // Service
 
     void ProcessInput(LookAtSettings & cameraLookAtSettings, const float deltaTimeSeconds);
 
+    void UpdateLookDirection();
+
+private: // Events
+
+    void OnMouseMoved(const MouseState & mouseState);
+
 private: // Members
+
+    boost::signals2::scoped_connection m_MouseMovedSignalConnection;
 
     Settings  m_Settings;
     glm::vec3 m_LookDirection;
+    float     m_Yaw;
+    float     m_Pitch;
 };
