@@ -6,6 +6,7 @@
 #include <numbers>
 
 #include <boost/format.hpp>
+#include <boost/signals2.hpp>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -48,6 +49,8 @@ static void OnGladFunctionCalled(const char * const funcName, void * const funcP
 static void OnFramebufferSizeChanged(GLFWwindow * const /*window*/, const int width, const int height);
 
 static void OnKeyPressed(GLFWwindow * const window, const Key key);
+
+static void SetMouseCursorCapture(GLFWwindow * const window, const bool isEnabled);
 
 //
 // Main
@@ -132,6 +135,8 @@ int main()
         // Set default polygon mode
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
+        boost::signals2::signal<void(float)> updateSignal;
+
         // SECTION: Input setup
         GlfwInputReceiver::InitializeInstance(window.get());
         GlfwInputReceiver::GetInstance()->KeyPressedSignal.connect(
@@ -162,6 +167,29 @@ int main()
         cameraControllerSettings.RotationSpeed = 0.5f;
 
         FlyCameraController cameraController(&camera, GlfwInputReceiver::GetInstance(), std::move(cameraControllerSettings));
+
+        const boost::signals2::connection cameraControllerUpdateConnection = updateSignal.connect(
+            std::bind(&decltype(cameraController)::Update, &cameraController, std::placeholders::_1)
+        );
+        boost::signals2::shared_connection_block cameraControllerUpdateConnectionBlock(cameraControllerUpdateConnection);
+
+        // Toggle camera controller activation on RMB click
+        GlfwInputReceiver::GetInstance()->MouseButtonPressedSignal.connect(
+            [&cameraControllerUpdateConnectionBlock, &window](
+                const MouseButton button, const MouseState & /*mouseState*/
+            ) {
+                if (button != MouseButton::Right)
+                    return;
+
+                if (cameraControllerUpdateConnectionBlock.blocking())
+                    cameraControllerUpdateConnectionBlock.unblock();
+                else
+                    cameraControllerUpdateConnectionBlock.block();
+
+                SetMouseCursorCapture(window.get(), !cameraControllerUpdateConnectionBlock.blocking());
+            }
+        );
+
         // END SECTION
 
         // SECTION: Mesh setup
@@ -255,8 +283,7 @@ int main()
 
             lastTimeTicks = currentTimeTicks;
 
-            // TODO: Use boost signal named updateSignal to implement update loop
-            cameraController.Update(deltaTimeSeconds);
+            updateSignal(deltaTimeSeconds);
 
             // TODO: Extract as scene render logic
             glClearColor(0.3f, 0.5f, 0.5f, 1.0f);
@@ -358,4 +385,9 @@ static void OnKeyPressed(GLFWwindow * const window, const Key key)
         TogglePolygonMode();
         break;
     }
+}
+
+static void SetMouseCursorCapture(GLFWwindow * const window, const bool isCaptureEnabled)
+{
+    glfwSetInputMode(window, GLFW_CURSOR, isCaptureEnabled ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 }
