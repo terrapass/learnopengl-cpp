@@ -164,7 +164,7 @@ int main()
 
         FlyCameraController::Settings cameraControllerSettings;
         cameraControllerSettings.MovementSpeed       = 0.5f;
-        cameraControllerSettings.RotationSensitivity = 0.025f;
+        cameraControllerSettings.RotationSensitivity = 0.005f;
         cameraControllerSettings.MustInvertPitch     = false;
         cameraControllerSettings.MinVerticalFov      = std::numbers::pi_v<float> / 6.0f;
         cameraControllerSettings.MaxVerticalFov      = 2.0f*std::numbers::pi_v<float> / 3.0f;
