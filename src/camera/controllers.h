@@ -103,6 +103,10 @@ public: // Interface types
         float MovementSpeed;
         float RotationSensitivity;
         bool  MustInvertPitch;
+        // TODO: Maybe extract zoom management into a separate controller, which would work alongside this one?
+        float MinVerticalFov;
+        float MaxVerticalFov;
+        float ZoomSensitivity;
     };
 
 public: // Construction
@@ -141,12 +145,17 @@ private: // Events
 
     void OnMouseMoved(const MouseState & mouseState);
 
+    void OnScroll(const glm::vec2 scrollOffset);
+
 private: // Members
 
     Settings  m_Settings;
 
     boost::signals2::scoped_connection m_MouseMovedSignalConnection;
+    boost::signals2::scoped_connection m_ScrollSignalConnection;
+
     std::optional<boost::signals2::shared_connection_block> m_MouseMovedSignalConnectionBlock;
+    std::optional<boost::signals2::shared_connection_block> m_ScrollSignalConnectionBlock;
 
     glm::vec3 m_LookDirection;
     float     m_Yaw;

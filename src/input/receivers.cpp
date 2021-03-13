@@ -56,9 +56,10 @@ void GlfwInputReceiver::InitializeInstance(GLFWwindow * const window)
 {
     assert(s_Instance == nullptr && "GlfwInputReceiver::InitializeInstance() must be called only once");
 
-    glfwSetKeyCallback(window, &GlfwInputReceiver::OnGlfwKeyEvent);
-    glfwSetCursorPosCallback(window, &GlfwInputReceiver::OnGlfwCursorPositionChanged);
+    glfwSetKeyCallback        (window, &GlfwInputReceiver::OnGlfwKeyEvent);
+    glfwSetCursorPosCallback  (window, &GlfwInputReceiver::OnGlfwCursorPositionChanged);
     glfwSetMouseButtonCallback(window, &GlfwInputReceiver::OnGlfwMouseButtonEvent);
+    glfwSetScrollCallback     (window, &GlfwInputReceiver::OnGlfwScrollEvent);
 
     s_Instance = std::unique_ptr<GlfwInputReceiver>(new GlfwInputReceiver(window));
 }
@@ -94,6 +95,11 @@ void GlfwInputReceiver::OnMouseButtonReleased(const MouseButton mouseButton)
     m_MouseState.SetMouseButtonPressed(mouseButton, false);
 
     MouseButtonReleasedSignal(mouseButton, m_MouseState);
+}
+
+void GlfwInputReceiver::OnScroll(const float scrollOffsetX, const float scrollOffsetY)
+{
+    ScrollSignal(glm::vec2(scrollOffsetX, scrollOffsetY));
 }
 
 void GlfwInputReceiver::OnGlfwKeyEvent(
@@ -163,4 +169,20 @@ void GlfwInputReceiver::OnGlfwMouseButtonEvent(
         GlfwInputReceiver::GetInstance()->OnMouseButtonReleased(mouseButton);
     }
 
+}
+
+void GlfwInputReceiver::OnGlfwScrollEvent(
+    GLFWwindow * const window,
+    const double       xoffset,
+    const double       yoffset
+)
+{
+    if (window != GlfwInputReceiver::GetInstance()->m_Window)
+    {
+        BOOST_LOG_TRIVIAL(warning)<< "Ignoring scroll event because the source window is different from the one GlfwInputReceiver has been initialized with";
+
+        return;
+    }
+
+    GlfwInputReceiver::GetInstance()->OnScroll(xoffset, yoffset);
 }

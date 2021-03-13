@@ -166,6 +166,9 @@ int main()
         cameraControllerSettings.MovementSpeed       = 0.5f;
         cameraControllerSettings.RotationSensitivity = 0.025f;
         cameraControllerSettings.MustInvertPitch     = false;
+        cameraControllerSettings.MinVerticalFov      = std::numbers::pi_v<float> / 6.0f;
+        cameraControllerSettings.MaxVerticalFov      = 2.0f*std::numbers::pi_v<float> / 3.0f;
+        cameraControllerSettings.ZoomSensitivity     = 0.05f;
 
         FlyCameraController cameraController(&camera, GlfwInputReceiver::GetInstance(), std::move(cameraControllerSettings));
         cameraController.SetEnabled(false);
@@ -245,10 +248,6 @@ int main()
         shaderProgram.SetUniformValueByName("tex", 0); // Using GL_TEXTURE0 for this sampler uniform
         //shaderProgram.SetUniformValueByName("tex1", 1); // ...GL_TEXTURE1...
 
-        const glm::mat4 & projection = camera.GetProjectionMatrix();
-
-        shaderProgram.SetUniformValueByName("projection", projection);
-
         glUseProgram(INVALID_OPENGL_SHADER);
 
         const std::array cubePositions{
@@ -289,9 +288,8 @@ int main()
 
             shaderProgram.Use();
 
-            const glm::mat4 & view = camera.GetLookAtMatrix();
-
-            shaderProgram.SetUniformValueByName("view",  view);
+            shaderProgram.SetUniformValueByName("view",       camera.GetLookAtMatrix());
+            shaderProgram.SetUniformValueByName("projection", camera.GetProjectionMatrix());
 
             for (int textureIdx = 0; static_cast<size_t>(textureIdx) < textures.size(); textureIdx++)
             {

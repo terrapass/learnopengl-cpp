@@ -28,6 +28,7 @@ public: // Signals
     boost::signals2::signal<void(const MouseState &)>              MouseMovedSignal;
     boost::signals2::signal<void(MouseButton, const MouseState &)> MouseButtonPressedSignal;
     boost::signals2::signal<void(MouseButton, const MouseState &)> MouseButtonReleasedSignal;
+    boost::signals2::signal<void(glm::vec2)>                       ScrollSignal;
 };
 
 //
@@ -75,6 +76,8 @@ private: // Service
 
     void OnMouseButtonReleased(const MouseButton mouseButton);
 
+    void OnScroll(const float scrollOffsetX, const float scrollOffsetY);
+
     static void OnGlfwKeyEvent(
         GLFWwindow * const window,
         const int          key,
@@ -94,6 +97,12 @@ private: // Service
         const int          button,
         const int          action,
         const int          mods
+    );
+
+    static void OnGlfwScrollEvent(
+        GLFWwindow * const window,
+        const double       xoffset,
+        const double       yoffset
     );
 
 private: // Statics

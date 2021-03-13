@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "logging.h"
+
 //
 // AutoRotatingCameraController
 //
@@ -84,16 +86,22 @@ FlyCameraController::FlyCameraController(
     BaseCameraController             (camera, inputReceiver),
     m_Settings                       (std::move(settings)),
     m_MouseMovedSignalConnection     (),
+    m_ScrollSignalConnection         (),
     m_MouseMovedSignalConnectionBlock(std::nullopt),
+    m_ScrollSignalConnectionBlock    (std::nullopt),
     m_LookDirection                  (m_Camera->GetLookAtSettings().GetLookDirectionNormalized()),
     m_Yaw                            (ExtractYawFromLookDirection(m_LookDirection)),
     m_Pitch                          (ExtractPitchFromLookDirection(m_LookDirection)),
     m_IsEnabled                      (true)
 {
     assert(!m_MouseMovedSignalConnection.connected());
+    assert(!m_ScrollSignalConnection.connected());
 
     m_MouseMovedSignalConnection = m_InputReceiver->MouseMovedSignal.connect(
         std::bind(&FlyCameraController::OnMouseMoved, this, std::placeholders::_1)
+    );
+    m_ScrollSignalConnection = m_InputReceiver->ScrollSignal.connect(
+        std::bind(&FlyCameraController::OnScroll, this, std::placeholders::_1)
     );
 }
 
@@ -128,9 +136,15 @@ void FlyCameraController::SetEnabled(const bool value)
     m_IsEnabled = value;
 
     if (m_IsEnabled)
+    {
         m_MouseMovedSignalConnectionBlock.reset();
+        m_ScrollSignalConnectionBlock.reset();
+    }
     else
+    {
         m_MouseMovedSignalConnectionBlock.emplace(m_MouseMovedSignalConnection);
+        m_ScrollSignalConnectionBlock.emplace(m_ScrollSignalConnection);
+    }
 }
 
 //
@@ -195,4 +209,24 @@ void FlyCameraController::OnMouseMoved(const MouseState & mouseState)
 
     // Clamp pitch strictly between -90 and 90 degrees to avoid look-at flip
     m_Pitch = std::clamp(m_Pitch + pitchInversionMultiplier*eulerAnglesDelta.y, -ALMOST_HALF_PI, ALMOST_HALF_PI);
+}
+
+void FlyCameraController::OnScroll(const glm::vec2 scrollOffset)
+{
+    Projection & cameraProjection = m_Camera->GetProjection();
+
+    if (!std::holds_alternative<PerspectiveProjection>(cameraProjection))
+    {
+        BOOST_LOG_TRIVIAL(warning)<< "Ignoring scroll since the controlled camera does NOT have perspective projection";
+
+        return;
+    }
+
+    PerspectiveProjection & cameraPerspectiveProjection = std::get<PerspectiveProjection>(cameraProjection);
+
+    cameraPerspectiveProjection.VerticalFov = std::clamp(
+        cameraPerspectiveProjection.VerticalFov - m_Settings.ZoomSensitivity*scrollOffset.y,
+        m_Settings.MinVerticalFov,
+        m_Settings.MaxVerticalFov
+    );
 }
