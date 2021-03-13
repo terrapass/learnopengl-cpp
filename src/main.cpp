@@ -387,7 +387,5 @@ static void OnKeyPressed(GLFWwindow * const window, const Key key)
 
 static void SetMouseCursorCapture(GLFWwindow * const window, const bool isCaptureEnabled)
 {
-    return; // FIXME
-
     glfwSetInputMode(window, GLFW_CURSOR, isCaptureEnabled ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 }
