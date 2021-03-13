@@ -196,6 +196,7 @@ float FlyCameraController::ExtractPitchFromLookDirection(const glm::vec3 & lookD
 
 void FlyCameraController::OnMouseMoved(const MouseState & mouseState)
 {
+    constexpr float DOUBLE_PI      = 2.0f*std::numbers::pi_v<float>;
     constexpr float ALMOST_HALF_PI = 0.499f*std::numbers::pi_v<float>;
 
     if (!mouseState.CursorPositionDelta.has_value())
@@ -203,7 +204,7 @@ void FlyCameraController::OnMouseMoved(const MouseState & mouseState)
 
     glm::vec2 eulerAnglesDelta = m_Settings.RotationSensitivity*mouseState.CursorPositionDelta.value();
 
-    m_Yaw += eulerAnglesDelta.x;
+    m_Yaw = std::fmod(m_Yaw + eulerAnglesDelta.x, DOUBLE_PI);
 
     const float pitchInversionMultiplier = m_Settings.MustInvertPitch ? 1.0f : -1.0f;
 
