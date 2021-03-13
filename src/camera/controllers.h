@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <optional>
 
 #include <boost/signals2.hpp>
 
@@ -122,11 +123,19 @@ public: // Interface
 
     void Update(const float deltaTimeSeconds);
 
+    bool IsEnabled() const;
+
+    void SetEnabled(const bool value);
+
 private: // Service
 
     void ProcessInput(LookAtSettings & cameraLookAtSettings, const float deltaTimeSeconds);
 
     void UpdateLookDirection();
+
+    static float ExtractYawFromLookDirection(const glm::vec3 & lookDirection);
+
+    static float ExtractPitchFromLookDirection(const glm::vec3 & lookDirection);
 
 private: // Events
 
@@ -134,10 +143,15 @@ private: // Events
 
 private: // Members
 
-    boost::signals2::scoped_connection m_MouseMovedSignalConnection;
-
     Settings  m_Settings;
+
+    boost::signals2::scoped_connection m_MouseMovedSignalConnection;
+    std::optional<boost::signals2::shared_connection_block> m_MouseMovedSignalConnectionBlock;
+
     glm::vec3 m_LookDirection;
     float     m_Yaw;
     float     m_Pitch;
+
+    // TODO: If needed, move up the hierarchy to BaseCameraController, along with corresponding interface methods.
+    bool m_IsEnabled;
 };

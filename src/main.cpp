@@ -168,26 +168,23 @@ int main()
         cameraControllerSettings.MustInvertPitch     = false;
 
         FlyCameraController cameraController(&camera, GlfwInputReceiver::GetInstance(), std::move(cameraControllerSettings));
+        cameraController.SetEnabled(false);
 
         const boost::signals2::connection cameraControllerUpdateConnection = updateSignal.connect(
             std::bind(&decltype(cameraController)::Update, &cameraController, std::placeholders::_1)
         );
-        boost::signals2::shared_connection_block cameraControllerUpdateConnectionBlock(cameraControllerUpdateConnection);
 
         // Toggle camera controller activation on RMB click
         GlfwInputReceiver::GetInstance()->MouseButtonPressedSignal.connect(
-            [&cameraControllerUpdateConnectionBlock, &window](
+            [&cameraController, &window](
                 const MouseButton button, const MouseState & /*mouseState*/
             ) {
                 if (button != MouseButton::Right)
                     return;
 
-                if (cameraControllerUpdateConnectionBlock.blocking())
-                    cameraControllerUpdateConnectionBlock.unblock();
-                else
-                    cameraControllerUpdateConnectionBlock.block();
+                cameraController.SetEnabled(!cameraController.IsEnabled());
 
-                SetMouseCursorCapture(window.get(), !cameraControllerUpdateConnectionBlock.blocking());
+                SetMouseCursorCapture(window.get(), cameraController.IsEnabled());
             }
         );
 
@@ -390,5 +387,7 @@ static void OnKeyPressed(GLFWwindow * const window, const Key key)
 
 static void SetMouseCursorCapture(GLFWwindow * const window, const bool isCaptureEnabled)
 {
+    return; // FIXME
+
     glfwSetInputMode(window, GLFW_CURSOR, isCaptureEnabled ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 }

@@ -3,6 +3,7 @@
 #include <cmath>
 #include <numbers>
 #include <algorithm>
+#include <cmath>
 
 //
 // AutoRotatingCameraController
@@ -80,10 +81,14 @@ FlyCameraController::FlyCameraController(
     IInputReceiver * const inputReceiver,
     Settings               settings
 ):
-    BaseCameraController        (camera, inputReceiver),
-    m_MouseMovedSignalConnection(),
-    m_Settings                  (std::move(settings)),
-    m_LookDirection             (m_Camera->GetLookAtSettings().GetLookDirectionNormalized())
+    BaseCameraController             (camera, inputReceiver),
+    m_Settings                       (std::move(settings)),
+    m_MouseMovedSignalConnection     (),
+    m_MouseMovedSignalConnectionBlock(std::nullopt),
+    m_LookDirection                  (m_Camera->GetLookAtSettings().GetLookDirectionNormalized()),
+    m_Yaw                            (ExtractYawFromLookDirection(m_LookDirection)),
+    m_Pitch                          (ExtractPitchFromLookDirection(m_LookDirection)),
+    m_IsEnabled                      (true)
 {
     assert(!m_MouseMovedSignalConnection.connected());
 
@@ -98,6 +103,9 @@ FlyCameraController::FlyCameraController(
 
 void FlyCameraController::Update(const float deltaTimeSeconds)
 {
+    if (!IsEnabled())
+        return;
+
     UpdateLookDirection();
 
     LookAtSettings & cameraLookAtSettings = m_Camera->GetLookAtSettings();
@@ -105,6 +113,24 @@ void FlyCameraController::Update(const float deltaTimeSeconds)
     ProcessInput(cameraLookAtSettings, deltaTimeSeconds);
 
     cameraLookAtSettings.SetLookDirectionRaw(m_LookDirection);
+}
+
+bool FlyCameraController::IsEnabled() const
+{
+    return m_IsEnabled;
+}
+
+void FlyCameraController::SetEnabled(const bool value)
+{
+    if (m_IsEnabled == value)
+        return;
+
+    m_IsEnabled = value;
+
+    if (m_IsEnabled)
+        m_MouseMovedSignalConnectionBlock.reset();
+    else
+        m_MouseMovedSignalConnectionBlock.emplace(m_MouseMovedSignalConnection);
 }
 
 //
@@ -133,11 +159,22 @@ void FlyCameraController::ProcessInput(LookAtSettings & cameraLookAtSettings, co
 void FlyCameraController::UpdateLookDirection()
 {
     m_LookDirection = glm::normalize(glm::vec3(
-        glm::cos(m_Yaw)*glm::cos(m_Pitch),
-        glm::sin(m_Pitch),
-        glm::sin(m_Yaw)*glm::cos(m_Pitch)
+        cos(m_Yaw)*cos(m_Pitch),
+        sin(m_Pitch),
+        sin(m_Yaw)*cos(m_Pitch)
     ));
 }
+
+float FlyCameraController::ExtractYawFromLookDirection(const glm::vec3 & lookDirection)
+{
+    return atan2(lookDirection.z, lookDirection.x);
+}
+
+float FlyCameraController::ExtractPitchFromLookDirection(const glm::vec3 & lookDirection)
+{
+    return asin(lookDirection.y);
+}
+
 
 //
 // Events
