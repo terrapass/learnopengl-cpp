@@ -194,7 +194,8 @@ int main()
         // END SECTION
 
         // SECTION: Mesh setup
-        const Mesh cubeMesh = CreateUnitCubeMesh(false, true, false);
+        const Mesh cubeMesh        = CreateUnitCubeMesh(false, true, false);
+        const Mesh lightSourceMesh = CreateUnitCubeMesh(true, true, false);
         // END SECTION
 
         // SECTION: Texture setup
@@ -237,26 +238,41 @@ int main()
         // END SECTION
 
         // SECTION: Shader setup
-        StatefulShaderProgram shaderProgram(MakeShaderProgramFromFilesPack(
+        static const glm::vec3 CUBE_POSITION(0.0f);
+        static const glm::vec3 LIGHT_SOURCE_POSITION(1.2f, 1.0f, 2.0f);
+
+        static const glm::vec3 CUBE_RGB (0.6f, 0.2f, 0.8f);
+        static const glm::vec3 LIGHT_RGB(1.0f, 1.0f, 1.0f);
+
+        StatefulShaderProgram cubeShaderProgram(MakeShaderProgramFromFilesPack(
             "basic_mvp.vert",
-            "basic_texture.frag"
+            "lighting_trivial_object.frag"
         ));
         //StatefulShaderProgram shaderProgram(MakeShaderProgramFromMatchingFiles("basic_texture"));
 
-        shaderProgram.Use();
+        cubeShaderProgram.Use();
 
-        shaderProgram.SetUniformValueByName("tex", 0); // Using GL_TEXTURE0 for this sampler uniform
+        //shaderProgram.SetUniformValueByName("tex", 0); // Using GL_TEXTURE0 for this sampler uniform
         //shaderProgram.SetUniformValueByName("tex1", 1); // ...GL_TEXTURE1...
+
+        cubeShaderProgram.SetUniformValueByName("model", glm::translate(glm::mat4(1.0f), CUBE_POSITION));
+
+        cubeShaderProgram.SetUniformValueByName("objectRgb", CUBE_RGB);
+        cubeShaderProgram.SetUniformValueByName("lightRgb", LIGHT_RGB);
+
+        StatefulShaderProgram lightSourceShaderProgram(MakeShaderProgramFromFilesPack(
+            "basic_mvp.vert",
+            "lighting_trivial_light_source.frag"
+        ));
+
+        lightSourceShaderProgram.Use();
+
+        lightSourceShaderProgram.SetUniformValueByName("model", glm::translate(glm::mat4(1.0f), LIGHT_SOURCE_POSITION));
+
+        lightSourceShaderProgram.SetUniformValueByName("lightRgb", LIGHT_RGB);
 
         glUseProgram(INVALID_OPENGL_SHADER);
 
-        const std::array cubePositions{
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(-3.0f, 3.0f, -1.0f),
-            glm::vec3(2.0f, -3.0f, -2.0f),
-            glm::vec3(0.5f, -2.0f, -1.0f),
-            glm::vec3(1.5f, 2.0f, -5.0f)
-        };
         // END SECTION
 
         glEnable(GL_BLEND);
@@ -286,10 +302,13 @@ int main()
             glClearColor(0.3f, 0.5f, 0.5f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            shaderProgram.Use();
+            for (StatefulShaderProgram & shaderProgram : {std::ref(cubeShaderProgram), std::ref(lightSourceShaderProgram)})
+            {
+                shaderProgram.Use();
 
-            shaderProgram.SetUniformValueByName("view",       camera.GetLookAtMatrix());
-            shaderProgram.SetUniformValueByName("projection", camera.GetProjectionMatrix());
+                shaderProgram.SetUniformValueByName("view",       camera.GetLookAtMatrix());
+                shaderProgram.SetUniformValueByName("projection", camera.GetProjectionMatrix());
+            }
 
             for (int textureIdx = 0; static_cast<size_t>(textureIdx) < textures.size(); textureIdx++)
             {
@@ -297,21 +316,28 @@ int main()
                 glBindTexture(GL_TEXTURE_2D, textures[textureIdx]);
             }
 
-            cubeMesh.Bind();
-
-            for (size_t i = 0; i < cubePositions.size(); i++)
+            // Render cube
             {
-                const glm::vec3 & cubePosition = cubePositions[i];
+                cubeMesh.Bind();
+                cubeShaderProgram.Use();
 
-                const glm::mat4 model = glm::rotate(
-                    glm::translate(glm::mat4(1.0f), cubePosition),
-                    static_cast<float>(i) + static_cast<float>(glfwGetTime()) / std::numbers::pi_v<float>,
-                    glm::normalize(glm::vec3(0.5f, 1.0f, 0.0f))
-                );
+                const glm::mat4 model = glm::translate(glm::mat4(1.0f), CUBE_POSITION);
 
-                shaderProgram.SetUniformValueByName("model", model);
+                cubeShaderProgram.SetUniformValueByName("model", model);
 
                 cubeMesh.Render(GL_TRIANGLES);
+            }
+
+            // Render light source
+            {
+                lightSourceMesh.Bind();
+                lightSourceShaderProgram.Use();
+
+                const glm::mat4 model = glm::translate(glm::mat4(1.0f), LIGHT_SOURCE_POSITION);
+
+                lightSourceShaderProgram.SetUniformValueByName("model", model);
+
+                lightSourceMesh.Render(GL_TRIANGLES);
             }
             // END TODO
 
