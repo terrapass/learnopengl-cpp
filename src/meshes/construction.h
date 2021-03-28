@@ -8,9 +8,20 @@
 // Utilities
 //
 
-Mesh CreateAabbMesh(const bool mustUseIndices, const glm::vec3 & minCoords, const glm::vec3 & maxCoords, const bool mustUseAxisTint);
+Mesh CreateAabbMesh(
+    const bool        mustUseIndices,
+    const glm::vec3 & minCoords,
+    const glm::vec3 & maxCoords,
+    const bool        mustUseAxisTint,
+    const bool        mustUseSmoothShading
+);
 
-inline Mesh CreateUnitCubeMesh(const bool mustUseIndices, const bool isOriginCentered, const bool mustUseAxisTint)
+inline Mesh CreateUnitCubeMesh(
+    const bool mustUseIndices,
+    const bool isOriginCentered,
+    const bool mustUseAxisTint,
+    const bool mustUseSmoothShading
+)
 {
     static const glm::vec3 CENTERED_ORIGIN_OFFSET(-0.5f, -0.5f, -0.5f);
 
@@ -20,6 +31,7 @@ inline Mesh CreateUnitCubeMesh(const bool mustUseIndices, const bool isOriginCen
         mustUseIndices,
         glm::vec3(0.0f) + actualOffset,
         glm::vec3(1.0f, 1.0f, 1.0f) + actualOffset,
-        mustUseAxisTint
+        mustUseAxisTint,
+        mustUseSmoothShading
     );
 }

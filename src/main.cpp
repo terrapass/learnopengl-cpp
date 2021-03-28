@@ -194,8 +194,9 @@ int main()
         // END SECTION
 
         // SECTION: Mesh setup
-        const Mesh subjectMesh        = CreateUnitCubeMesh(false, true, false);
-        const Mesh lightSourceMesh = CreateUnitCubeMesh(true, true, false);
+        // TODO: Refactor mesh creation interface to reduce the number of non-descriptive boolean parameters.
+        const Mesh subjectMesh     = CreateUnitCubeMesh(false, true, false, false);
+        const Mesh lightSourceMesh = CreateUnitCubeMesh(true, true, false, true);
         // END SECTION
 
         // SECTION: Texture setup
@@ -246,11 +247,11 @@ int main()
 
         static const float AMBIENT_LIGHT_STRENGTH = 0.1f;
 
-        StatefulShaderProgram subjectShaderProgram(MakeShaderProgramFromFilesPack(
-            "basic_mvp.vert",
-            "lighting_basic.frag"
-        ));
-        //StatefulShaderProgram shaderProgram(MakeShaderProgramFromMatchingFiles("basic_texture"));
+        // StatefulShaderProgram subjectShaderProgram(MakeShaderProgramFromFilesPack(
+        //     "lighting_basic.vert",
+        //     "lighting_basic.frag"
+        // ));
+        StatefulShaderProgram subjectShaderProgram(MakeShaderProgramFromMatchingFiles("lighting_basic"));
 
         subjectShaderProgram.Use();
 
@@ -258,6 +259,8 @@ int main()
         //shaderProgram.SetUniformValueByName("tex1", 1); // ...GL_TEXTURE1...
 
         subjectShaderProgram.SetUniformValueByName("model", glm::translate(glm::mat4(1.0f), SUBJECT_POSITION));
+
+        subjectShaderProgram.SetUniformValueByName("lightSourcePosition", LIGHT_SOURCE_POSITION);
 
         subjectShaderProgram.SetUniformValueByName("objectRgb", SUBJECT_RGB);
         subjectShaderProgram.SetUniformValueByName("lightRgb", LIGHT_RGB);
