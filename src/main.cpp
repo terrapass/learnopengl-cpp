@@ -244,9 +244,11 @@ int main()
         static const glm::vec3 SUBJECT_RGB(0.6f, 0.2f, 0.8f);
         static const glm::vec3 LIGHT_RGB  (1.0f, 1.0f, 1.0f);
 
+        static const float AMBIENT_LIGHT_STRENGTH = 0.1f;
+
         StatefulShaderProgram subjectShaderProgram(MakeShaderProgramFromFilesPack(
             "basic_mvp.vert",
-            "lighting_trivial_object.frag"
+            "lighting_basic.frag"
         ));
         //StatefulShaderProgram shaderProgram(MakeShaderProgramFromMatchingFiles("basic_texture"));
 
@@ -259,6 +261,8 @@ int main()
 
         subjectShaderProgram.SetUniformValueByName("objectRgb", SUBJECT_RGB);
         subjectShaderProgram.SetUniformValueByName("lightRgb", LIGHT_RGB);
+
+        subjectShaderProgram.SetUniformValueByName("ambientStrength", AMBIENT_LIGHT_STRENGTH);
 
         StatefulShaderProgram lightSourceShaderProgram(MakeShaderProgramFromFilesPack(
             "basic_mvp.vert",
